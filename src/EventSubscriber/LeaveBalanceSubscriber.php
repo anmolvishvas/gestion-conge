@@ -76,73 +76,110 @@ class LeaveBalanceSubscriber implements EventSubscriberInterface
             $oldCarryOver = $originalEntity->getCarriedOverToNextYear();
 
             if ($newCarryOver !== $oldCarryOver) {
-                $nextYear = $originalEntity->getYear() + 1;
-                $userId = $originalEntity->getUser()->getId();
-
-                // Use direct SQL to update the next year's balance
                 $conn = $this->entityManager->getConnection();
-                
-                // First, find the next year's balance ID
-                $nextYearBalanceQuery = "SELECT id, initial_paid_leave FROM leave_balance WHERE user_id = :userId AND year = :year";
-                $nextYearBalance = $conn->executeQuery(
-                    $nextYearBalanceQuery,
+                $userId = $originalEntity->getUser()->getId();
+                $currentYear = $originalEntity->getYear();
+
+                // Find the current year's balance (2025)
+                $currentYearBalanceQuery = "
+                    SELECT id, initial_paid_leave, remaining_paid_leave, carried_over_from_previous_year 
+                    FROM leave_balance 
+                    WHERE user_id = :userId AND year = :year
+                ";
+                $currentYearBalance = $conn->executeQuery(
+                    $currentYearBalanceQuery,
                     [
                         'userId' => $userId,
-                        'year' => $nextYear
+                        'year' => $currentYear
                     ]
                 )->fetchAssociative();
 
-                if ($nextYearBalance) {
-                    $this->logger->debug('Found next year balance:', [
-                        'id' => $nextYearBalance['id'],
-                        'initialPaidLeave' => $nextYearBalance['initial_paid_leave']
+                if ($currentYearBalance) {
+                    $this->logger->debug('Found current year balance:', [
+                        'id' => $currentYearBalance['id'],
+                        'year' => $currentYear,
+                        'currentCarryOver' => $currentYearBalance['carried_over_from_previous_year']
                     ]);
 
-                    // Calculate new remaining paid leave
-                    $newRemaining = $nextYearBalance['initial_paid_leave'] + $newCarryOver;
-
-                    // Update the next year's balance
-                    $updateQuery = "
-                        UPDATE leave_balance 
-                        SET 
-                            carried_over_from_previous_year = :carryOver,
-                            remaining_paid_leave = :remaining
-                        WHERE id = :id
+                    // Find the previous year's balance (2024)
+                    $previousYear = $currentYear - 1;
+                    $previousYearBalanceQuery = "
+                        SELECT id, carried_over_to_next_year 
+                        FROM leave_balance 
+                        WHERE user_id = :userId AND year = :year
                     ";
-
-                    $result = $conn->executeStatement(
-                        $updateQuery,
+                    $previousYearBalance = $conn->executeQuery(
+                        $previousYearBalanceQuery,
                         [
-                            'carryOver' => $newCarryOver,
-                            'remaining' => $newRemaining,
-                            'id' => $nextYearBalance['id']
+                            'userId' => $userId,
+                            'year' => $previousYear
                         ]
-                    );
-
-                    $this->logger->debug('Updated next year balance:', [
-                        'id' => $nextYearBalance['id'],
-                        'newCarryOver' => $newCarryOver,
-                        'newRemaining' => $newRemaining,
-                        'updateResult' => $result
-                    ]);
-
-                    // Verify the update
-                    $verifyQuery = "SELECT * FROM leave_balance WHERE id = :id";
-                    $verifyBalance = $conn->executeQuery(
-                        $verifyQuery,
-                        ['id' => $nextYearBalance['id']]
                     )->fetchAssociative();
 
-                    $this->logger->debug('Verified next year balance after update:', [
-                        'id' => $verifyBalance['id'],
-                        'carriedOver' => $verifyBalance['carried_over_from_previous_year'],
-                        'remaining' => $verifyBalance['remaining_paid_leave']
-                    ]);
-                } else {
-                    $this->logger->warning('No balance found for next year:', [
-                        'year' => $nextYear,
-                        'userId' => $userId
-                    ]);
+                    if ($previousYearBalance) {
+                        // Calculate the new remaining paid leave
+                        $oldCarryOver = $currentYearBalance['carried_over_from_previous_year'];
+                        $currentRemaining = $currentYearBalance['remaining_paid_leave'];
+                        $initialPaidLeave = $currentYearBalance['initial_paid_leave'];
+                        
+                        // Remove old carry over and add new one
+                        $newRemaining = ($currentRemaining - $oldCarryOver) + $newCarryOver;
+
+                        // Update both current and previous year balances
+                        $updateCurrentYearQuery = "
+                            UPDATE leave_balance 
+                            SET 
+                                carried_over_from_previous_year = :carryOver,
+                                remaining_paid_leave = :remaining
+                            WHERE id = :id
+                        ";
+
+                        $updatePreviousYearQuery = "
+                            UPDATE leave_balance 
+                            SET carried_over_to_next_year = :carryOver
+                            WHERE id = :id
+                        ";
+
+                        // Execute both updates in a transaction
+                        $conn->beginTransaction();
+                        try {
+                            // Update current year (2025)
+                            $conn->executeStatement(
+                                $updateCurrentYearQuery,
+                                [
+                                    'carryOver' => $newCarryOver,
+                                    'remaining' => $newRemaining,
+                                    'id' => $currentYearBalance['id']
+                                ]
+                            );
+
+                            // Update previous year (2024)
+                            $conn->executeStatement(
+                                $updatePreviousYearQuery,
+                                [
+                                    'carryOver' => $newCarryOver,
+                                    'id' => $previousYearBalance['id']
+                                ]
+                            );
+
+                            $conn->commit();
+
+                            $this->logger->debug('Updated both years:', [
+                                'currentYear' => [
+                                    'id' => $currentYearBalance['id'],
+                                    'newCarryOver' => $newCarryOver,
+                                    'newRemaining' => $newRemaining
+                                ],
+                                'previousYear' => [
+                                    'id' => $previousYearBalance['id'],
+                                    'newCarryOver' => $newCarryOver
+                                ]
+                            ]);
+                        } catch (\Exception $e) {
+                            $conn->rollBack();
+                            throw $e;
+                        }
+                    }
                 }
             }
         } catch (\Exception $e) {
