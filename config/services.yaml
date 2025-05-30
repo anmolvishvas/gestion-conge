@@ -4,6 +4,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.certificates_directory: '%kernel.project_dir%/public/uploads/certificates'
 
 services:
     # default configuration for services in *this* file
@@ -22,3 +23,12 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Service\FileUploader:
+        arguments:
+            $targetDirectory: '%app.certificates_directory%'
+
+    # Add the subscriber explicitly
+    App\EventSubscriber\UserCreatedSubscriber:
+        tags:
+            - { name: 'doctrine.event_subscriber' }

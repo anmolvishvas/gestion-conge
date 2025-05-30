@@ -1,0 +1,95 @@
+/* Login Background Animation Styles */
+.login-background {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 0;
+  overflow: hidden;
+  min-height: 100vh;
+  background: #fff;
+}
+
+.background-grid-container {
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  top: -10%;
+  left: -10%;
+  display: grid;
+  grid-template-columns: [start] 1fr [left-gutter] repeat(16, 86.6px) [left-gutter] 1fr [end];
+  grid-template-rows: [top] 1fr [top-gutter] repeat(8, 64px) [bottom-gutter] 1fr [bottom];
+  justify-content: center;
+  transform: rotate(-12deg) skew(-12deg);
+}
+
+.box-root {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.box-divider {
+  box-shadow: inset 0 0 0 2px #e3e8ee;
+}
+
+.box-blue {
+  background-color: #3b82f6;
+  opacity: 0.7;
+}
+
+.box-blue-dark {
+  background-color: #1e40af;
+  opacity: 0.7;
+}
+
+.box-gray {
+  background-color: #e3e8ee;
+  opacity: 0.7;
+}
+
+.box-cyan {
+  background-color: #7dd3fc;
+  opacity: 0.7;
+}
+
+.animation-right-left {
+  animation: animationRightLeft 2s ease-in-out infinite;
+}
+
+.animation-left-right {
+  animation: animationLeftRight 2s ease-in-out infinite;
+}
+
+.trans3s {
+  animation: animationLeftRight 3s ease-in-out infinite;
+}
+
+.trans4s {
+  animation: animationRightLeft 4s ease-in-out infinite;
+}
+
+@keyframes animationLeftRight {
+  0% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(100px);
+  }
+  100% {
+    transform: translateX(0px);
+  }
+}
+
+@keyframes animationRightLeft {
+  0% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(-100px);
+  }
+  100% {
+    transform: translateX(0px);
+  }
+} 
