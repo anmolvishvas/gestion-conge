@@ -57,6 +57,11 @@ php bin/console doctrine:migrations:migrate
 symfony server:start
 ```
 
+6. Pour recevoir les mails en local, ouvrez un nouveau terminal et exécutez :
+```bash
+php bin/console messenger:consume async
+```
+
 ### Frontend (React)
 
 1. Installez Node.js si ce n'est pas déjà fait :
