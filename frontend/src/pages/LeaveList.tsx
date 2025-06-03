@@ -17,11 +17,9 @@ const LeaveList = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null);
 
-  // Filter leaves for current user
   const userLeaves = filteredLeaves.filter(leave => {
     if (!currentUser) return false;
     
-    // Vérifier si le congé appartient à l'utilisateur courant
     const isUserLeave = leave.userId === currentUser.id || 
       (typeof leave.user === 'string' && leave.user === `/api/users/${currentUser.id}`) ||
       leave.user?.id === currentUser.id;
@@ -29,10 +27,8 @@ const LeaveList = () => {
     return isUserLeave;
   });
 
-  console.log('User Leaves after filtering:', userLeaves);
 
   useEffect(() => {
-    console.log('Component mounted, filtered leaves:', filteredLeaves);
   }, [filteredLeaves]);
 
   const handleFilterChange = (filter: LeaveFilterType) => {
@@ -110,7 +106,6 @@ const LeaveList = () => {
   
   const formatDateString = (date: string) => {
     if (!date) return '';
-    // Gérer le cas où la date inclut l'heure
     const [dateOnly] = date.split('T');
     const [year, month, day] = dateOnly.split('-');
     return `${day}/${month}/${year}`;
@@ -340,7 +335,6 @@ const LeaveList = () => {
         )}
       </div>
       
-      {/* Details Modal */}
       {showDetailsModal && selectedLeave && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -454,7 +448,6 @@ const LeaveList = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showConfirmDelete && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">

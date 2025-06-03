@@ -8,12 +8,10 @@ interface LoginResponse {
 export const authService = {
     login: async (email: string, password: string): Promise<User> => {
         try {
-            console.log('Envoi de la requête de connexion:', { email });
             const response = await api.post<LoginResponse>('/login', {
                 email,
                 password
             });
-            console.log('Réponse du serveur:', response.data);
             return response.data.user;
         } catch (error: any) {
             console.error('Erreur de connexion:', error);

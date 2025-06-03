@@ -39,10 +39,14 @@ const LeaveCarryover = () => {
                         return null;
                     }
 
+                    const actualRemainingDays = balance.remainingPaidLeave + 
+                        (balance.carriedOverFromPreviousYear || 0) - 
+                        (balance.carriedOverToNextYear || 0);
+
                     return {
                         userId: user.id,
                         name: `${user.firstName} ${user.lastName}`,
-                        remainingDays: balance.remainingPaidLeave,
+                        remainingDays: actualRemainingDays,
                         carriedOverDays: balance.carriedOverToNextYear,
                         newCarryOver: balance.carriedOverToNextYear,
                         balanceId: balance.id
@@ -82,12 +86,10 @@ const LeaveCarryover = () => {
             setError(null);
             setSuccess(null);
 
-            await leaveBalanceService.updateLeaveBalance(user.balanceId, {
-                carriedOverToNextYear: user.newCarryOver
-            });
+            await leaveBalanceService.carryOverLeaves(user.userId, year - 1, user.newCarryOver);
 
             setSuccess(`Le report a été mis à jour pour ${user.name}`);
-            await loadUsers(); // Recharger les données
+            await loadUsers();
         } catch (err) {
             setError(`Erreur lors de la mise à jour pour ${user.name}`);
             console.error(err);
@@ -118,13 +120,11 @@ const LeaveCarryover = () => {
             const changedUsers = users.filter(user => user.newCarryOver !== user.carriedOverDays);
             
             for (const user of changedUsers) {
-                await leaveBalanceService.updateLeaveBalance(user.balanceId, {
-                    carriedOverToNextYear: user.newCarryOver
-                });
+                await leaveBalanceService.carryOverLeaves(user.userId, year - 1, user.newCarryOver);
             }
 
             setSuccess(`Les reports ont été enregistrés avec succès pour ${changedUsers.length} employé(s)`);
-            await loadUsers(); // Reload data
+            await loadUsers();
         } catch (err) {
             setError('Erreur lors de la sauvegarde des reports');
             console.error(err);
@@ -200,7 +200,15 @@ const LeaveCarryover = () => {
                                         Employé
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Jours restants {year-1}
+                                        <div className="flex items-center space-x-1">
+                                            <span>Jours restants {year-1}</span>
+                                            <div className="group relative">
+                                                <Info size={14} className="text-gray-400 cursor-help" />
+                                                <div className="hidden group-hover:block absolute z-10 w-72 px-4 py-2 text-sm bg-gray-900 text-white rounded-lg -left-20 top-6">
+                                                    Calculé comme suit : Solde restant + Report année précédente - Report année suivante
+                                                </div>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Jours à reporter
@@ -217,7 +225,14 @@ const LeaveCarryover = () => {
                                             <div className="text-sm font-medium text-gray-900">{user.name}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{user.remainingDays} jours</div>
+                                            <div className="text-sm text-gray-900">
+                                                {user.remainingDays} jours
+                                                {user.carriedOverDays > 0 && (
+                                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                        {user.carriedOverDays} jour{user.carriedOverDays > 1 ? 's' : ''} reporté{user.carriedOverDays > 1 ? 's' : ''} sur {year}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center space-x-2">

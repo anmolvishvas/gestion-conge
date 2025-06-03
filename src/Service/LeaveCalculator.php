@@ -15,7 +15,6 @@ class LeaveCalculator
 
     public function calculateTotalDays(\DateTimeInterface $startDate, \DateTimeInterface $endDate, array $halfDayOptions): float
     {
-        // Récupérer les jours fériés entre les dates
         $holidays = $this->holidayRepository->findHolidaysBetweenDates($startDate, $endDate);
         $holidayDates = array_map(function($holiday) {
             return $holiday->getDate()->format('Y-m-d');
@@ -28,7 +27,6 @@ class LeaveCalculator
             $dateString = $currentDate->format('Y-m-d');
             $dayOfWeek = (int)$currentDate->format('N');
 
-            // Vérifier si ce n'est pas un weekend (6=samedi, 7=dimanche) et pas un jour férié
             if ($dayOfWeek < 6 && !in_array($dateString, $holidayDates)) {
                 $option = $this->findHalfDayOption($dateString, $halfDayOptions);
 

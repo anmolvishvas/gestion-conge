@@ -1,12 +1,12 @@
 import { Users, UserCheck, UserX, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
-import openspaceImage from '../../assets/images/openspace.jpg';
+import openspaceImage from '../../assets/images/Image (2).jpg';
 import { User } from '../../types/index';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const ITEMS_PER_PAGE = 8; // 2 colonnes x 4 lignes
+const ITEMS_PER_PAGE = 8;
 
 const DailyPresence = () => {
   const { getPresentEmployees, getAbsentEmployees } = useAdminContext();
@@ -17,16 +17,13 @@ const DailyPresence = () => {
   const [presentEmployees, setPresentEmployees] = useState<User[]>([]);
   const [absentEmployees, setAbsentEmployees] = useState<User[]>([]);
   
-  // Update employee lists when date or search changes
   useEffect(() => {
     const allPresentEmployees = getPresentEmployees(selectedDate);
     const allAbsentEmployees = getAbsentEmployees(selectedDate);
     
-    // Reset pagination when date changes
     setPresentPage(1);
     setAbsentPage(1);
     
-    // Apply search filter if exists
     const filteredPresent = filterEmployees(allPresentEmployees);
     const filteredAbsent = filterEmployees(allAbsentEmployees);
     
@@ -45,7 +42,6 @@ const DailyPresence = () => {
     );
     }
     
-    // Tri alphabétique par prénom
     return filtered.sort((a, b) => a.firstName.localeCompare(b.firstName));
   };
   

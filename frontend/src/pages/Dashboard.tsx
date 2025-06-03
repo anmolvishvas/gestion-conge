@@ -6,7 +6,7 @@ import { useLeaveContext } from '../context/LeaveContext';
 import { useUserContext } from '../context/UserContext';
 import { formatDate } from '../utils/formatters';
 import { Leave, Permission } from '../types';
-import openspaceImage from '../assets/images/Image (1).jpg';
+import openspaceImage from '../assets/images/Image (2).jpg';
 
 interface DashboardState {
   isLoading: boolean;
@@ -21,7 +21,6 @@ const Dashboard = () => {
   const { currentUser } = useUserContext();
   const { leaves, permissions, setLeaveFilter } = useLeaveContext();
   
-  // All states in one place
   const [state, setState] = useState<DashboardState>({
     isLoading: true,
     error: null,
@@ -30,32 +29,27 @@ const Dashboard = () => {
     currentPage: 1
   });
 
-  // Constants
-  const itemsPerPage = 6; // 2 rows x 3 columns
+  const itemsPerPage = 6;
   const totalPages = Math.ceil(state.recentLeaves.length / itemsPerPage);
 
-  // Fetch recent data
   useEffect(() => {
     if (!currentUser) return;
 
     const fetchRecentData = async () => {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
       try {
-        // Filtrer les congés pour l'utilisateur actuel
         const userLeaves = leaves.filter(leave => 
           leave.userId === currentUser.id || 
           (typeof leave.user === 'string' && leave.user === `/api/users/${currentUser.id}`) ||
           leave.user?.id === currentUser.id
         );
         
-        // Trier par date de début (du plus récent au plus ancien)
         const sortedLeaves = [...userLeaves].sort((a, b) => {
           const dateA = new Date(a.startDate);
           const dateB = new Date(b.startDate);
           return dateB.getTime() - dateA.getTime();
         });
         
-        // Même chose pour les permissions
         const userPermissions = permissions.filter(permission =>
           permission.userId === currentUser.id ||
           (typeof permission.user === 'string' && permission.user === `/api/users/${currentUser.id}`) ||
@@ -87,7 +81,6 @@ const Dashboard = () => {
     fetchRecentData();
   }, [currentUser, leaves, permissions]);
 
-  // Reset pagination when leaves change
   useEffect(() => {
     setState(prev => ({ ...prev, currentPage: 1 }));
   }, [state.recentLeaves]);
@@ -101,20 +94,17 @@ const Dashboard = () => {
     setState(prev => ({ ...prev, currentPage: page }));
   };
 
-  // Computed values
   const paginatedLeaves = state.recentLeaves.slice(
     (state.currentPage - 1) * itemsPerPage,
     state.currentPage * itemsPerPage
   );
 
-  // Calculate stats
   const paidLeaves = leaves.filter(leave => leave.type === 'Congé payé' && leave.userId === currentUser?.id);
   const sickLeaves = leaves.filter(leave => leave.type === 'Congé maladie' && leave.userId === currentUser?.id);
   const pendingLeaves = leaves.filter(leave => leave.status === 'En attente' && leave.userId === currentUser?.id);
   const rejectedLeaves = leaves.filter(leave => leave.status === 'Rejeté' && leave.userId === currentUser?.id);
   const userPermissions = permissions.filter(permission => permission.userId === currentUser?.id);
 
-  // Total days taken for each type
   const paidLeaveDaysTaken = paidLeaves
     .filter(leave => leave.status === 'Approuvé')
     .reduce((total, leave) => total + Number(leave.totalDays), 0);
@@ -123,17 +113,14 @@ const Dashboard = () => {
     .filter(leave => leave.status === 'Approuvé')
     .reduce((total, leave) => total + Number(leave.totalDays), 0);
 
-  // Total available days
   const totalPaidLeaveDaysAvailable = currentUser?.paidLeaveBalance || 0;
   const totalSickLeaveDaysAvailable = currentUser?.sickLeaveBalance || 0;
 
-  // Recent leaves
   const recentLeaves = [...leaves]
     .filter(leave => leave.userId === currentUser?.id)
     .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
     .slice(0, 3);
 
-  // Handle stat card click
   const handleStatCardClick = (type: string) => {
     if (type === 'paid') {
       setLeaveFilter('paid');
@@ -250,7 +237,6 @@ const Dashboard = () => {
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex justify-center items-center space-x-2 mt-6">
                     <button

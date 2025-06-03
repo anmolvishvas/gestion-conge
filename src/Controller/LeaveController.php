@@ -67,11 +67,9 @@ class LeaveController extends AbstractController
             $leave->getCertificate()
         );
         
-        // Set the correct MIME type
         $mimeType = mime_content_type($filePath);
         $response->headers->set('Content-Type', $mimeType);
         
-        // Set CORS headers
         $response->headers->set('Access-Control-Allow-Origin', '*');
         $response->headers->set('Access-Control-Allow-Methods', 'GET, OPTIONS');
         $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -94,7 +92,6 @@ class LeaveController extends AbstractController
             throw new BadRequestHttpException('Format de fichier invalide');
         }
 
-        // Vérifier le type de fichier
         $mimeType = $certificateFile->getMimeType();
         $allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
         
@@ -102,12 +99,10 @@ class LeaveController extends AbstractController
             throw new BadRequestHttpException('Type de fichier non autorisé. Seuls les fichiers PDF, JPEG et PNG sont acceptés.');
         }
 
-        // Supprimer l'ancien certificat s'il existe
         if ($leave->getCertificate()) {
             $this->fileUploader->removeFile($leave->getCertificate());
         }
 
-        // Upload du nouveau certificat avec le nouveau format de nom
         $fileName = $this->fileUploader->uploadCertificate(
             $certificateFile,
             $leave->getUser(),
@@ -133,10 +128,8 @@ class LeaveController extends AbstractController
             throw new BadRequestHttpException('Aucun certificat à supprimer');
         }
 
-        // Supprimer le fichier
         $this->fileUploader->removeFile($leave->getCertificate());
         
-        // Mettre à jour l'entité
         $leave->setCertificate(null);
         
         $this->entityManager->persist($leave);

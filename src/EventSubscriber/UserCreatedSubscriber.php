@@ -57,16 +57,13 @@ class UserCreatedSubscriber implements EventSubscriberInterface
             'lastName' => $entity->getLastName()
         ]);
 
-        // Send welcome email
         $this->sendWelcomeEmail($entity);
 
-        // Get the start date and current year
         $startDate = $entity->getStartDate();
         $currentYear = (int)date('Y');
         
         if (!$startDate) {
             $this->logger->warning('User has no start date, using current year with full balance');
-            // Initialize current year with full balance
             $this->leaveBalanceManager->initializeYearlyBalanceWithProrata(
                 $entity,
                 $currentYear,
@@ -78,13 +75,11 @@ class UserCreatedSubscriber implements EventSubscriberInterface
         $startYear = (int)$startDate->format('Y');
         $startMonth = (int)$startDate->format('n');
 
-        // Initialize balances for all years from start year to current year
         for ($year = $startYear; $year <= $currentYear; $year++) {
-            $monthsWorked = 12; // Default full year
+            $monthsWorked = 12;
 
-            // If it's the start year, calculate prorated months
             if ($year === $startYear) {
-                $monthsWorked = 13 - $startMonth; // 13 because we count the start month
+                $monthsWorked = 13 - $startMonth;
             }
 
             $this->logger->info('Initializing leave balance', [
@@ -94,7 +89,6 @@ class UserCreatedSubscriber implements EventSubscriberInterface
                 'startDate' => $startDate->format('Y-m-d')
             ]);
 
-            // Initialize the balance for this year
             $this->leaveBalanceManager->initializeYearlyBalanceWithProrata(
                 $entity,
                 $year,
@@ -134,7 +128,6 @@ class UserCreatedSubscriber implements EventSubscriberInterface
 
     private function getWelcomeEmailTemplate(User $user): string
     {
-        // Récupérer le solde initial des congés
         $currentYear = (int)date('Y');
         $leaveBalance = $this->leaveBalanceManager->getYearlyBalance($user, $currentYear);
 

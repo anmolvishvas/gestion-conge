@@ -23,7 +23,6 @@ const Holidays = () => {
 
   const weekDays = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
-  // Générer une liste d'années (de l'année actuelle - 5 à l'année actuelle + 5)
   const years = Array.from(
     { length: 11 },
     (_, i) => new Date().getFullYear() - 5 + i
@@ -132,7 +131,6 @@ const Holidays = () => {
     const firstDay = getFirstDayOfMonth(year, month);
     const days = [];
     
-    // Render weekday headers
     weekDays.forEach((day, index) => {
       days.push(
         <div key={`header-${day}`} 
@@ -143,7 +141,6 @@ const Holidays = () => {
       );
     });
     
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-12"></div>);
     }
@@ -192,7 +189,6 @@ const Holidays = () => {
     return days;
   };
 
-  // Nouvelle fonction pour formater la date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
@@ -255,13 +251,11 @@ const Holidays = () => {
 
   return (
     <div className="flex gap-8">
-      {/* Left side - Calendars */}
       <div className="flex-1">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Gestion des jours fériés</h1>
         </div>
 
-        {/* Current Month Calendar */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -287,7 +281,6 @@ const Holidays = () => {
           </div>
         </div>
 
-        {/* Next Month Calendar */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -303,9 +296,7 @@ const Holidays = () => {
         </div>
       </div>
 
-      {/* Right side - Holiday Management */}
       <div className="w-96 flex flex-col h-[calc(100vh-5rem)] sticky top-20">
-        {/* Add Holiday Form */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Ajouter un jour férié</h2>
           <div className="flex flex-col space-y-4">
@@ -345,7 +336,6 @@ const Holidays = () => {
           </div>
         </div>
 
-        {/* Holidays List */}
         <div className="bg-white rounded-xl shadow-lg p-6 flex-1 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Liste des jours fériés</h2>
@@ -386,7 +376,6 @@ const Holidays = () => {
             {filteredHolidays.length === 0 ? (
               <p className="text-gray-500 text-center py-4">Aucun jour férié enregistré</p>
             ) : selectedFilterMonth === 'all' ? (
-              // Grouped by month when showing all
               Object.entries(sortAndGroupHolidays(filteredHolidays)).map(([monthYear, monthHolidays]) => (
                 <div key={monthYear} className="space-y-2 mb-4">
                   <h3 className="text-sm font-medium text-gray-500 bg-gray-50 py-2 px-4 rounded-lg sticky top-0 z-20">
@@ -414,7 +403,6 @@ const Holidays = () => {
                 </div>
               ))
             ) : (
-              // Simple list when filtered by month
               <div className="space-y-2">
                 {filteredHolidays.map((holiday) => (
                   <div

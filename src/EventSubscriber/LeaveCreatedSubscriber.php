@@ -47,7 +47,6 @@ class LeaveCreatedSubscriber
             'type' => $entity->getType()
         ]);
 
-        // Send notification emails
         $this->sendEmployeeNotificationEmail($entity);
         $this->sendDirectorNotificationEmail($entity);
     }

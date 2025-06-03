@@ -27,30 +27,23 @@ const Login = ({ onLogin }: LoginProps) => {
     }
     
     try {
-      console.log('Tentative de connexion...');
       await login(email, password);
-      console.log('Connexion réussie');
       onLogin();
-      // La redirection sera gérée par l'effet ci-dessous
     } catch (err) {
       console.error('Erreur de connexion:', err);
       setError('Email ou mot de passe incorrect.');
     }
   };
 
-  // Effet pour gérer la redirection après connexion
   useEffect(() => {
-    console.log('Effect de redirection - État actuel:', { isLoggedIn, isAdmin, currentUser });
     if (isLoggedIn && currentUser) {
       const redirectPath = currentUser.isAdmin ? '/admin/dashboard' : '/dashboard';
-      console.log('Redirection vers:', redirectPath);
       navigate(redirectPath, { replace: true });
     }
   }, [isLoggedIn, isAdmin, currentUser, navigate]);
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
-      {/* Animated Background */}
       <div className="login-background">
         <div className="background-grid-container">
           <div className="box-root flex-flex" style={{ gridArea: 'top / start / 8 / end' }}>
@@ -83,7 +76,6 @@ const Login = ({ onLogin }: LoginProps) => {
         </div>
       </div>
 
-      {/* Login Content */}
       <div className="relative z-10 min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="flex justify-center">

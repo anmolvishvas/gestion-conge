@@ -35,7 +35,6 @@ class FileUploader
 
     public function uploadCertificate(UploadedFile $file, User $user, \DateTimeInterface $startDate, \DateTimeInterface $endDate): string
     {
-        // Format du nom : certificat-nom-prenom-YYYYMMDD-YYYYMMDD.extension
         $userName = $this->slugger->slug(sprintf('%s-%s', $user->getLastName(), $user->getFirstName()))->lower();
         $startDateStr = $startDate->format('Ymd');
         $endDateStr = $endDate->format('Ymd');

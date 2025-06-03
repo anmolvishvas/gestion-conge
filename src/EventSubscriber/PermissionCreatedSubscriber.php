@@ -47,7 +47,6 @@ class PermissionCreatedSubscriber
             'reason' => $entity->getReason()
         ]);
 
-        // Send notification emails
         $this->sendEmployeeNotificationEmail($entity);
         $this->sendDirectorNotificationEmail($entity);
     }
@@ -117,13 +116,11 @@ class PermissionCreatedSubscriber
         $status = ucfirst($permission->getStatus());
         $user = $permission->getUser();
 
-        // Prepare replacement details
         $replacementDetails = '';
         if ($permission->getReplacementSlots() && !$permission->getReplacementSlots()->isEmpty()) {
             $replacementDetails = '<div style="background-color: #e0f2fe; padding: 15px; border-radius: 5px; margin: 20px 0;">';
             $replacementDetails .= '<h3 style="margin-top: 0; color: #0369a1;">Détails des remplacements :</h3>';
             
-            // Trier les créneaux par date et heure
             $slots = $permission->getReplacementSlots()->toArray();
             usort($slots, function($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
@@ -134,7 +131,6 @@ class PermissionCreatedSubscriber
             });
             
             foreach ($slots as $slot) {
-                // Combine date with time
                 $date = $slot->getDate();
                 $startDateTime = clone $date;
                 $endDateTime = clone $date;
@@ -196,13 +192,11 @@ class PermissionCreatedSubscriber
         $status = ucfirst($permission->getStatus());
         $user = $permission->getUser();
 
-        // Prepare replacement details
         $replacementDetails = '';
         if ($permission->getReplacementSlots() && !$permission->getReplacementSlots()->isEmpty()) {
             $replacementDetails = '<div style="background-color: #e0f2fe; padding: 15px; border-radius: 5px; margin: 20px 0;">';
             $replacementDetails .= '<h3 style="margin-top: 0; color: #0369a1;">Détails des remplacements :</h3>';
             
-            // Trier les créneaux par date et heure
             $slots = $permission->getReplacementSlots()->toArray();
             usort($slots, function($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
@@ -213,7 +207,6 @@ class PermissionCreatedSubscriber
             });
             
             foreach ($slots as $slot) {
-                // Combine date with time
                 $date = $slot->getDate();
                 $startDateTime = clone $date;
                 $endDateTime = clone $date;

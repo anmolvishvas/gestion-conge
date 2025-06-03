@@ -44,7 +44,6 @@ class EmailService
                 ->text(strip_tags($body))
                 ->html($body);
 
-            // Add recipients
             $recipients = array_map('trim', explode(';', $emailRecipient));
             foreach ($recipients as $recipient) {
                 if (!empty($recipient)) {
@@ -52,7 +51,6 @@ class EmailService
                 }
             }
 
-            // Add CC recipients if provided
             if (!empty($emailCopyRecipient)) {
                 $ccRecipients = array_map('trim', explode(';', $emailCopyRecipient));
                 foreach ($ccRecipients as $ccRecipient) {
@@ -62,7 +60,6 @@ class EmailService
                 }
             }
 
-            // Handle attachments
             if ($attachments !== null) {
                 foreach ($attachments as $attachment) {
                     try {
@@ -79,13 +76,11 @@ class EmailService
 
                         $fileName = !empty($attachment['name']) ? $attachment['name'] : 'Rapport.pdf';
                         
-                        // Create temporary file
                         $tmpPath = sys_get_temp_dir() . '/' . uniqid() . $fileName;
                         file_put_contents($tmpPath, $fileContent);
                         
                         $email->attachFromPath($tmpPath, $fileName, 'application/pdf');
                         
-                        // Clean up temporary file
                         unlink($tmpPath);
                     } catch (\Exception $ex) {
                         throw new BadRequestHttpException("Error attaching file {$attachment['name']}: " . $ex->getMessage());

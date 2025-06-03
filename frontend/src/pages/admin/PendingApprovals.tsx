@@ -27,18 +27,15 @@ const PendingApprovals = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState<Leave | null>(null);
   
-  // Ajout des états pour le tri et la recherche
   const [sortField, setSortField] = useState<'date' | 'name' | 'duration'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Get pending leaves and permissions
   const pendingLeaves = leaves
     .filter((leave): leave is Leave & { id: number } => 
       leave.status === 'En attente' && typeof leave.id === 'number'
     );
     
-  // Filtrer et trier les permissions
   const filteredAndSortedPermissions = permissions
     .filter(permission => {
       if (permission.status !== 'En attente') return false;
@@ -74,7 +71,6 @@ const PendingApprovals = () => {
           : b.durationMinutes - a.durationMinutes;
       }
       
-      // Par défaut, tri par date
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
       return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;

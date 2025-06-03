@@ -29,19 +29,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   
-  // Effect to handle initial session restoration
   useEffect(() => {
     const restoreSession = () => {
       try {
-        console.log('Tentative de restauration de session...');
         const storedUser = sessionStorage.getItem('user');
         if (storedUser) {
           const user = JSON.parse(storedUser);
-          console.log('Utilisateur restauré:', user);
           setCurrentUser(user);
           setIsLoggedIn(true);
           setIsAdmin(user.isAdmin || false);
-          console.log('Session restaurée - États:', { isLoggedIn: true, isAdmin: user.isAdmin || false });
         }
       } catch (error) {
         console.error('Erreur lors de la restauration de session:', error);
@@ -55,14 +51,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     restoreSession();
   }, []);
 
-  // Effect to handle storage events for cross-tab synchronization
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'user') {
         if (event.newValue) {
           try {
             const user = JSON.parse(event.newValue);
-            console.log('Changement de stockage détecté - Nouvel utilisateur:', user);
             setCurrentUser(user);
             setIsLoggedIn(true);
             setIsAdmin(user.isAdmin || false);
@@ -86,13 +80,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      console.log('Tentative de connexion avec:', { email });
       const user = await authService.login(email, password);
-      console.log('Réponse de connexion:', user);
       setCurrentUser(user);
       setIsLoggedIn(true);
       setIsAdmin(user.isAdmin || false);
-      console.log('États après connexion:', { isLoggedIn: true, isAdmin: user.isAdmin || false });
       sessionStorage.setItem('user', JSON.stringify(user));
     } catch (error: any) {
       console.error('Erreur lors de la connexion:', error);
@@ -101,7 +92,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   };
   
   const logout = () => {
-    console.log('Déconnexion...');
     setCurrentUser(null);
     setIsLoggedIn(false);
     setIsAdmin(false);

@@ -32,13 +32,11 @@ const AddLeave = () => {
   const [excludedHolidays, setExcludedHolidays] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Calculate remaining leave balance and pending leaves
   const calculateLeaveBalances = () => {
     if (!currentUser || !leaves) return { paid: 0, sick: 0, pendingPaid: 0, pendingSick: 0 };
     
     const userLeaves = leaves.filter(leave => leave.userId === currentUser.id);
     
-    // Calculer les congés approuvés
     const approvedPaidLeaves = userLeaves
       .filter(leave => leave.type === 'Congé payé' && leave.status === 'Approuvé')
       .reduce((total, leave) => total + parseFloat(leave.totalDays), 0);
@@ -47,7 +45,6 @@ const AddLeave = () => {
       .filter(leave => leave.type === 'Congé maladie' && leave.status === 'Approuvé')
       .reduce((total, leave) => total + parseFloat(leave.totalDays), 0);
     
-    // Calculer les congés en attente
     const pendingPaidLeaves = userLeaves
       .filter(leave => leave.type === 'Congé payé' && leave.status === 'En attente')
       .reduce((total, leave) => total + parseFloat(leave.totalDays), 0);
@@ -66,7 +63,6 @@ const AddLeave = () => {
   
   const balances = calculateLeaveBalances();
   
-  // Fetch holidays when component mounts
   useEffect(() => {
     const fetchHolidays = async () => {
       setIsLoadingHolidays(true);
@@ -84,10 +80,8 @@ const AddLeave = () => {
   }, []);
   
   const handleHalfDayChange = (date: string, type: HalfDayType) => {
-    // Ne pas permettre les changements pour les congés maladie
     if (leaveType === 'Congé maladie') return;
     
-    // Mettre à jour les options immédiatement
     const updatedOptions = dateOptions.map(option => 
       option.date === date ? { ...option, type } : option
     );
@@ -95,7 +89,6 @@ const AddLeave = () => {
     setDateOptions(updatedOptions);
   };
 
-  // Effet pour mettre à jour les options lors du changement de dates
   useEffect(() => {
     if (!startDate || !endDate) {
       setDateOptions([]);
@@ -116,7 +109,6 @@ const AddLeave = () => {
     const excludedHolidayDates: string[] = [];
     const workingDays: string[] = [];
     
-    // Traiter chaque date de la période
     dates.forEach(date => {
       const currentDate = new Date(date);
       const isWeekendDay = isWeekend(currentDate);
@@ -129,7 +121,6 @@ const AddLeave = () => {
         excludedHolidayDates.push(date);
       }
 
-      // N'ajouter que les jours qui ne sont ni des weekends ni des jours fériés
       if (!isWeekendDay && !isHolidayDay) {
         workingDays.push(date);
       }
@@ -137,15 +128,12 @@ const AddLeave = () => {
 
     setExcludedHolidays(excludedHolidayDates);
 
-    // Mettre à jour les options en préservant les sélections existantes
     if (leaveType === 'Congé maladie') {
-      // Pour les congés maladie, toujours journée complète
     setDateOptions(workingDays.map(date => ({ 
       date, 
       type: HALF_DAY_TYPES.FULL 
     })));
     } else {
-      // Pour les autres types, préserver les sélections existantes
       const newOptions = workingDays.map(date => {
         const existingOption = dateOptions.find(opt => opt.date === date);
         return existingOption || {
@@ -157,14 +145,12 @@ const AddLeave = () => {
     }
   }, [startDate, endDate, holidays, leaveType]);
 
-  // Effet pour calculer la durée totale
   useEffect(() => {
     if (!startDate || !endDate || dateOptions.length === 0) {
       setLeaveDuration(0);
       return;
     }
 
-    // Calculer la durée en tenant compte des demi-journées
     let totalDays = 0;
     dateOptions.forEach(option => {
       switch (option.type) {
@@ -183,7 +169,6 @@ const AddLeave = () => {
     setLeaveDuration(totalDays);
   }, [startDate, endDate, dateOptions]);
 
-  // Effet pour réinitialiser les options lors du changement de type de congé
   useEffect(() => {
     if (leaveType === 'Congé maladie') {
       setDateOptions(prev => prev.map(option => ({
@@ -193,7 +178,6 @@ const AddLeave = () => {
     }
   }, [leaveType]);
   
-  // Check if medical certificate is needed
   useEffect(() => {
     if (leaveType === 'Congé maladie' && dateOptions.length > 0) {
       const durationDays = calculateLeaveDuration(startDate, endDate, dateOptions, holidays);
@@ -203,7 +187,6 @@ const AddLeave = () => {
     }
   }, [leaveType, dateOptions, startDate, endDate, holidays]);
   
-  // Fonction pour vérifier si deux périodes se chevauchent
   const datesOverlap = (start1: string, end1: string, start2: string, end2: string) => {
     const start1Date = new Date(start1);
     const end1Date = new Date(end1);
@@ -213,7 +196,6 @@ const AddLeave = () => {
     return start1Date <= end2Date && end1Date >= start2Date;
   };
 
-  // Fonction pour vérifier les chevauchements avec les congés existants
   const checkOverlappingLeaves = () => {
     if (!currentUser || !leaves) return null;
 
@@ -234,7 +216,6 @@ const AddLeave = () => {
     setError('');
     setIsSubmitting(true);
     
-    // Validation de base
     if (!startDate || !endDate) {
       setError('Veuillez sélectionner les dates de début et de fin.');
       setIsSubmitting(false);
@@ -247,7 +228,6 @@ const AddLeave = () => {
       return;
     }
 
-    // Vérifier les chevauchements
     const overlappingLeave = checkOverlappingLeaves();
     if (overlappingLeave) {
       setError(`Vous avez déjà une demande de congé pour cette période (${format(new Date(overlappingLeave.startDate), 'dd/MM/yyyy')} au ${format(new Date(overlappingLeave.endDate), 'dd/MM/yyyy')} - ${overlappingLeave.status})`);
@@ -255,7 +235,6 @@ const AddLeave = () => {
       return;
     }
 
-    // Vérifier si les dates de congé maladie tombent sur des jours fériés
     if (leaveType === 'Congé maladie') {
       const startOnHoliday = holidays.some(holiday => holiday.date === startDate);
       const endOnHoliday = holidays.some(holiday => holiday.date === endDate);
@@ -273,7 +252,6 @@ const AddLeave = () => {
       return;
     }
     
-    // Vérifier le solde disponible en tenant compte des congés en attente
     if (leaveType === 'Congé payé') {
       const totalRequestedAndPending = leaveDuration + balances.pendingPaid;
       if (totalRequestedAndPending > balances.paid) {
@@ -296,7 +274,6 @@ const AddLeave = () => {
       }
     }
     
-    // Créer la nouvelle demande de congé
     const newLeave: Omit<Leave, 'id'> = {
       userId: currentUser?.id || 0,
       type: leaveType,
@@ -339,7 +316,6 @@ const AddLeave = () => {
         </div>
         
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6 relative">
-          {/* Overlay Loader */}
           {isSubmitting && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
               <div className="text-center">
@@ -370,7 +346,6 @@ const AddLeave = () => {
             </div>
           )}
           
-          {/* Alerte pour les jours fériés */}
           {startDate && endDate && excludedHolidays.length > 0 && (
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded-lg">
               <div className="flex">

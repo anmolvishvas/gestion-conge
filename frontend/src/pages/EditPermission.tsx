@@ -21,7 +21,6 @@ const EditPermission = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch permission data
   useEffect(() => {
     const fetchPermission = async () => {
       try {
@@ -34,31 +33,26 @@ const EditPermission = () => {
           return;
         }
 
-        // Verify if the user has the right to edit this permission
         if (permission.userId !== currentUser?.id && !currentUser?.isAdmin) {
           navigate('/permission/liste');
           return;
         }
 
-        // Only allow editing if the permission is pending
         if (permission.status !== 'En attente') {
           setError('Seules les permissions en attente peuvent être modifiées');
           return;
         }
 
-        // Format dates and times
         const formattedDate = new Date(permission.date).toISOString().split('T')[0];
-        const formattedStartTime = permission.startTime.substring(0, 5); // Get HH:mm
-        const formattedEndTime = permission.endTime.substring(0, 5); // Get HH:mm
+        const formattedStartTime = permission.startTime.substring(0, 5);
+        const formattedEndTime = permission.endTime.substring(0, 5);
 
-        // Set form data
         setDate(formattedDate);
         setStartTime(formattedStartTime);
         setEndTime(formattedEndTime);
         setReason(permission.reason);
         setDurationMinutes(permission.durationMinutes);
 
-        // Format replacement slots
         const formattedSlots = permission.replacementSlots.map(slot => ({
           ...slot,
           date: new Date(slot.date).toISOString().split('T')[0],
@@ -79,7 +73,6 @@ const EditPermission = () => {
     fetchPermission();
   }, [id, currentUser, getPermissionById, navigate]);
 
-  // Calculate duration when times change
   useEffect(() => {
     if (startTime && endTime) {
       const minutes = calculateDurationInMinutes(startTime, endTime);
@@ -144,7 +137,7 @@ const EditPermission = () => {
     if (!dateString) return false;
     const date = new Date(dateString);
     const day = date.getDay();
-    return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+    return day === 0 || day === 6;
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,7 +149,6 @@ const EditPermission = () => {
       return;
     }
 
-    // Basic validation
     if (!date || !startTime || !endTime || !reason) {
       setError('Veuillez remplir tous les champs obligatoires.');
       return;
@@ -167,14 +159,12 @@ const EditPermission = () => {
       return;
     }
     
-    // Validate replacement slots
     const invalidSlots = replacementSlots.filter(slot => !slot.date || !slot.startTime || !slot.endTime);
     if (invalidSlots.length > 0) {
       setError('Veuillez remplir tous les champs pour les plages de remplacement.');
       return;
     }
 
-    // Check for weekend slots
     const weekendSlots = replacementSlots.filter(slot => isWeekend(slot.date));
     if (weekendSlots.length > 0) {
       setError('Les remplacements ne peuvent pas être effectués le weekend.');
@@ -182,7 +172,6 @@ const EditPermission = () => {
     }
     
     try {
-      // Update permission
       const updatedPermission: Partial<Permission> = {
         date,
         startTime,

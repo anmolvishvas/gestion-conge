@@ -10,9 +10,8 @@ class LeaveBalanceManager
 {
     private EntityManagerInterface $entityManager;
     
-    // Constantes pour les droits annuels
-    private const ANNUAL_PAID_LEAVE_DAYS = 22;  // Congés payés annuels
-    private const ANNUAL_SICK_LEAVE_DAYS = 15;  // Congés maladie annuels
+    private const ANNUAL_PAID_LEAVE_DAYS = 22;
+    private const ANNUAL_SICK_LEAVE_DAYS = 15;
 
     public function __construct(EntityManagerInterface $entityManager)
     {
@@ -21,7 +20,6 @@ class LeaveBalanceManager
 
     public function initializeYearlyBalance(User $user, int $year): LeaveBalance
     {
-        // Récupérer le solde de l'année précédente s'il existe
         $previousYearBalance = $this->entityManager->getRepository(LeaveBalance::class)
             ->findOneBy(['user' => $user, 'year' => $year - 1]);
 
@@ -33,7 +31,6 @@ class LeaveBalanceManager
             ->setRemainingPaidLeave(22)
             ->setRemainingSickLeave(15);
 
-        // Si un solde de l'année précédente existe et des jours ont été reportés
         if ($previousYearBalance && $previousYearBalance->getCarriedOverToNextYear() > 0) {
             $balance->setCarriedOverFromPreviousYear($previousYearBalance->getCarriedOverToNextYear());
         }
@@ -46,7 +43,6 @@ class LeaveBalanceManager
 
     public function initializeYearlyBalanceWithProrata(User $user, int $year, int $monthsWorked): LeaveBalance
     {
-        // Vérifier si un solde existe déjà
         $existingBalance = $this->entityManager->getRepository(LeaveBalance::class)
             ->findOneBy(['user' => $user, 'year' => $year]);
 
@@ -54,12 +50,10 @@ class LeaveBalanceManager
             return $existingBalance;
         }
 
-        // Si 12 mois, pas de prorata
         if ($monthsWorked >= 12) {
             $proratedPaidLeave = self::ANNUAL_PAID_LEAVE_DAYS;
             $proratedSickLeave = self::ANNUAL_SICK_LEAVE_DAYS;
         } else {
-            // Calculer les congés au prorata
             $proratedPaidLeave = (int)round((self::ANNUAL_PAID_LEAVE_DAYS / 12) * $monthsWorked);
             $proratedSickLeave = (int)round((self::ANNUAL_SICK_LEAVE_DAYS / 12) * $monthsWorked);
         }
@@ -82,7 +76,6 @@ class LeaveBalanceManager
 
     public function carryOverLeaves(User $user, int $fromYear, int $daysToCarryOver): void
     {
-        // Vérifier que le nombre de jours à reporter ne dépasse pas le solde restant
         $currentYearBalance = $this->entityManager->getRepository(LeaveBalance::class)
             ->findOneBy(['user' => $user, 'year' => $fromYear]);
 
@@ -95,11 +88,9 @@ class LeaveBalanceManager
             throw new \RuntimeException("Le nombre de jours à reporter ($daysToCarryOver) dépasse le solde disponible ($availableDays)");
         }
 
-        // Mettre à jour le solde de l'année courante
         $currentYearBalance->setCarriedOverToNextYear($daysToCarryOver);
         $currentYearBalance->setRemainingPaidLeave($availableDays - $daysToCarryOver);
 
-        // Créer ou mettre à jour le solde de l'année suivante
         $nextYearBalance = $this->entityManager->getRepository(LeaveBalance::class)
             ->findOneBy(['user' => $user, 'year' => $fromYear + 1]);
 
@@ -131,7 +122,6 @@ class LeaveBalanceManager
                 throw new \RuntimeException("Solde insuffisant");
             }
 
-            // D'abord utiliser les jours reportés
             $fromCarriedOver = min($days, $balance->getCarriedOverFromPreviousYear());
             $fromCurrent = $days - $fromCarriedOver;
 

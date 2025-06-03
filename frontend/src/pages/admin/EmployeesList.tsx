@@ -17,17 +17,14 @@ const EmployeesList = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Fonction de filtrage des utilisateurs
   const getFilteredUsers = () => {
     if (!users) return [];
     
     return users.filter(user => {
-      // Filtre par statut
       if (statusFilter !== 'all' && user.status !== statusFilter) {
         return false;
       }
       
-      // Filtre par recherche
       if (searchQuery.trim() !== '') {
         const searchLower = searchQuery.toLowerCase().trim();
         return (

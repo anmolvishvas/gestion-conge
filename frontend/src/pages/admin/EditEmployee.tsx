@@ -53,8 +53,8 @@ const EditEmployee = () => {
       if (!existingUser) throw new Error("Utilisateur introuvable");
   
       const updatedUser: User = {
-        ...existingUser, // retain unchanged data
-        ...formData,     // override with updated data
+        ...existingUser, 
+        ...formData,
       };
   
       await updateUser(parseInt(id), updatedUser);
@@ -68,14 +68,12 @@ const EditEmployee = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
-    // Convertir les valeurs numériques
     if (type === 'number') {
       setFormData(prev => ({
         ...prev,
         [name]: parseFloat(value) || 0
       }));
     } else if (name === 'trigram') {
-      // Convertir en majuscules et limiter à 3 caractères
       setFormData(prev => ({
         ...prev,
         [name]: value.toUpperCase().slice(0, 3)

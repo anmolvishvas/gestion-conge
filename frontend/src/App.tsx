@@ -127,7 +127,6 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       
-      {/* Holiday Calendar routes */}
       <Route path="/holidays/calendar" element={
         <ProtectedRoute>
           <Layout>
@@ -144,7 +143,6 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       
-      {/* Admin routes */}
       <Route path="/admin/dashboard" element={
         <AdminRoute>
           <Layout>
@@ -225,7 +223,6 @@ function AppRoutes() {
         </AdminRoute>
       } />
       
-      {/* Catch all route */}
       <Route path="*" element={
         <Navigate to={isAdmin ? "/admin/dashboard" : "/dashboard"} replace />
       } />

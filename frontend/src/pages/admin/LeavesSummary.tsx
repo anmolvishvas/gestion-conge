@@ -1,16 +1,23 @@
 import  { Calendar, Users, FileText, Search, ChevronDown, ArrowRightLeft } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import equipeImage from '../../assets/images/equipe.jpg';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const LeavesSummary = () => {
-  const { getEmployeeLeaveSummary } = useAdminContext();
+  const { getEmployeeLeaveSummary, refreshLeaveSummary } = useAdminContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   
-  // Générer la liste des années (de l'année actuelle à 5 ans en arrière)
+  useEffect(() => {
+    refreshLeaveSummary();
+  }, []);
+
+  useEffect(() => {
+    refreshLeaveSummary();
+  }, [selectedYear]);
+  
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
   

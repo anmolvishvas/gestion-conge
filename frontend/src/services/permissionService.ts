@@ -2,12 +2,9 @@ import type { Permission } from '../types/index';
 import api from './api';
 
 const formatPermissionForApi = (permission: Partial<Permission>) => {
-  // Ensure we have a valid user reference
   const userIri = permission.userId ? `/api/users/${permission.userId}` : undefined;
 
-  // Format replacement slots
   const formattedSlots = permission.replacementSlots?.map(slot => {
-    // Pour une création, on n'inclut pas l'ID ou la référence à la permission
     if (!permission.id) {
       return {
         '@type': 'ReplacementSlot',
@@ -18,7 +15,6 @@ const formatPermissionForApi = (permission: Partial<Permission>) => {
       };
     }
     
-    // Pour une mise à jour, on inclut l'ID si disponible
     return {
       '@type': 'ReplacementSlot',
       ...(slot.id && { '@id': `/api/replacement_slots/${slot.id}` }),
@@ -48,25 +44,23 @@ const formatPermissionForApi = (permission: Partial<Permission>) => {
 };
 
 const formatPermissionFromApi = (permission: any): Permission => {
-  // Extract user ID from IRI
   const userId = typeof permission.user === 'string' 
     ? parseInt(permission.user.split('/').pop() || '0', 10)
     : permission.user?.id || 0;
 
-  // Format replacement slots
   const replacementSlots = Array.isArray(permission.replacementSlots) 
     ? permission.replacementSlots.map((slot: any) => ({
         id: typeof slot === 'string' 
           ? parseInt(slot.split('/').pop() || '0', 10)
           : slot.id || 0,
         date: typeof slot === 'string' 
-          ? '' // Handle IRI case
+          ? ''
           : slot.date.split('T')[0],
         startTime: typeof slot === 'string'
-          ? '' // Handle IRI case
+          ? ''
           : slot.startTime.split('T')[1]?.substring(0, 5) || slot.startTime,
         endTime: typeof slot === 'string'
-          ? '' // Handle IRI case
+          ? ''
           : slot.endTime.split('T')[1]?.substring(0, 5) || slot.endTime,
         durationMinutes: typeof slot === 'string' ? 0 : slot.durationMinutes
       }))
@@ -108,10 +102,8 @@ class PermissionService {
   }
 
   async update(id: number, permissionData: Partial<Permission>): Promise<Permission> {
-    // First get the current permission to preserve the user reference
     const currentPermission = await this.getById(id);
     
-    // Merge the data but keep the user reference and ID
     const mergedData = {
       ...permissionData,
       id: id,

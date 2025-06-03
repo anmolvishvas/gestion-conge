@@ -20,7 +20,6 @@ const EditLeave = () => {
   const navigate = useNavigate();
   const { leaves, updateLeave, refreshLeaves } = useLeaveContext();
   const { currentUser } = useUserContext();
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -34,7 +33,6 @@ const EditLeave = () => {
     halfDayOptions: [],
   });
 
-  // État pour gérer les demi-journées
   const [selectedDays, setSelectedDays] = useState<HalfDayOption[]>([]);
 
   const fetchHolidays = async () => {
@@ -56,19 +54,17 @@ const EditLeave = () => {
     fetchHolidays();
   }, []);
 
-  // Calculate remaining leave balance and pending leaves
   const calculateLeaveBalances = () => {
     if (!currentUser || !leaves) return { paid: 0, sick: 0, pendingPaid: 0, pendingSick: 0 };
     
     const userLeaves = leaves.filter(leave => leave.userId === currentUser.id);
     const currentLeave = leaves.find(leave => leave.id === parseInt(id || '0'));
     
-    // Calculer les congés approuvés
     const approvedPaidLeaves = userLeaves
       .filter(leave => 
         leave.type === 'Congé payé' && 
         leave.status === 'Approuvé' &&
-        leave.id !== parseInt(id || '0') // Exclure le congé en cours d'édition
+        leave.id !== parseInt(id || '0')
       )
       .reduce((total, leave) => total + parseFloat(leave.totalDays), 0);
       
@@ -76,11 +72,10 @@ const EditLeave = () => {
       .filter(leave => 
         leave.type === 'Congé maladie' && 
         leave.status === 'Approuvé' &&
-        leave.id !== parseInt(id || '0') // Exclure le congé en cours d'édition
+        leave.id !== parseInt(id || '0')
       )
       .reduce((total, leave) => total + parseFloat(leave.totalDays), 0);
     
-    // Calculer les congés en attente (excluant le congé en cours d'édition)
     const pendingPaidLeaves = userLeaves
       .filter(leave => 
         leave.type === 'Congé payé' && 
@@ -112,7 +107,6 @@ const EditLeave = () => {
     if (id) {
       const leave = leaves.find(l => l.id === parseInt(id));
       if (leave && leave.status === 'En attente') {
-        // Initialiser les données du formulaire
         setFormData({
           startDate: leave.startDate,
           endDate: leave.endDate,
@@ -121,7 +115,6 @@ const EditLeave = () => {
           halfDayOptions: leave.halfDayOptions || [],
         });
 
-        // Initialiser les demi-journées avec les options existantes
         if (leave.halfDayOptions && leave.halfDayOptions.length > 0) {
         setSelectedDays(leave.halfDayOptions);
         }
@@ -132,7 +125,6 @@ const EditLeave = () => {
     }
   }, [id, leaves, navigate]);
 
-  // Effet pour mettre à jour les options lors du changement de dates
   useEffect(() => {
     if (!formData.startDate || !formData.endDate) {
       setSelectedDays([]);
@@ -153,12 +145,9 @@ const EditLeave = () => {
         return !isWeekendDay && !isHolidayDay;
     });
 
-    // Préserver les options existantes ou utiliser les valeurs par défaut
     const newHalfDayOptions = workingDays.map(day => {
       const dateStr = format(day, 'yyyy-MM-dd');
-      // Chercher d'abord dans les options du formulaire
       const existingFormOption = formData.halfDayOptions?.find(opt => opt.date === dateStr);
-      // Puis dans les options sélectionnées
       const existingSelectedOption = selectedDays.find(opt => opt.date === dateStr);
       
       if (existingFormOption) {
@@ -176,7 +165,6 @@ const EditLeave = () => {
     setSelectedDays(newHalfDayOptions);
   }, [formData.startDate, formData.endDate, holidays, formData.type]);
 
-  // Améliorer l'affichage pour montrer les jours exclus
   const getExcludedDays = (start: string, end: string) => {
     if (!start || !end) return [];
     
@@ -193,7 +181,6 @@ const EditLeave = () => {
       .map(day => format(day, 'yyyy-MM-dd'));
   };
 
-  // Calculer le nombre de jours (en excluant les weekends et jours fériés)
   const calculateDays = (start: string, end: string, halfDays: HalfDayOption[]) => {
     if (!start || !end) return 0;
 
@@ -241,7 +228,6 @@ const EditLeave = () => {
   };
 
   const handleHalfDayChange = (date: string, type: HalfDayType) => {
-    // Ne pas permettre les changements pour les congés maladie
     if (formData.type === 'Congé maladie') return;
 
     const newSelectedDays = selectedDays.map(day => 
@@ -255,7 +241,6 @@ const EditLeave = () => {
     }));
   };
 
-  // Fonction pour vérifier si deux périodes se chevauchent
   const datesOverlap = (start1: string, end1: string, start2: string, end2: string) => {
     const start1Date = new Date(start1);
     const end1Date = new Date(end1);
@@ -265,13 +250,12 @@ const EditLeave = () => {
     return start1Date <= end2Date && end1Date >= start2Date;
   };
 
-  // Fonction pour vérifier les chevauchements avec les congés existants
   const checkOverlappingLeaves = () => {
     if (!currentUser || !leaves || !id || !formData.startDate || !formData.endDate) return null;
 
     const userLeaves = leaves.filter(leave => 
       leave.userId === currentUser.id && 
-      leave.id !== parseInt(id) && // Exclure le congé en cours d'édition
+      leave.id !== parseInt(id) && 
       (leave.status === 'En attente' || leave.status === 'Approuvé')
     );
 
@@ -296,7 +280,6 @@ const EditLeave = () => {
       const existingLeave = leaves.find(l => l.id === parseInt(id));
       if (!existingLeave) throw new Error("Congé introuvable");
 
-      // Vérifier les chevauchements
       const overlappingLeave = checkOverlappingLeaves();
       if (overlappingLeave) {
         setError(`Vous avez déjà une demande de congé pour cette période (${format(new Date(overlappingLeave.startDate), 'dd/MM/yyyy')} au ${format(new Date(overlappingLeave.endDate), 'dd/MM/yyyy')} - ${overlappingLeave.status})`);
@@ -304,7 +287,6 @@ const EditLeave = () => {
         return;
       }
 
-      // Vérifier si les dates de congé maladie tombent sur des jours fériés
       if (formData.type === 'Congé maladie') {
         const startOnHoliday = holidays.some(holiday => holiday.date === formData.startDate);
         const endOnHoliday = holidays.some(holiday => holiday.date === formData.endDate);
@@ -316,10 +298,8 @@ const EditLeave = () => {
         }
       }
 
-      // Calculer le nombre de jours en excluant les weekends et jours fériés
       const totalDays = calculateDays(formData.startDate, formData.endDate, selectedDays);
 
-      // Vérifier le solde disponible en tenant compte des congés en attente
       if (formData.type === 'Congé payé') {
         const totalRequestedAndPending = totalDays + balances.pendingPaid;
         if (totalRequestedAndPending > balances.paid) {
@@ -393,7 +373,6 @@ const EditLeave = () => {
         </div>
       )}
 
-      {/* Alerte pour les jours fériés */}
       {formData.startDate && formData.endDate && getExcludedDays(formData.startDate, formData.endDate).length > 0 && (
         <div className="mb-4 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg">
           <div className="flex">
@@ -440,7 +419,6 @@ const EditLeave = () => {
           <h2 className="text-lg font-semibold text-indigo-900">Formulaire de modification</h2>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-6 relative">
-          {/* Overlay Loader */}
           {isSubmitting && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
               <div className="text-center">

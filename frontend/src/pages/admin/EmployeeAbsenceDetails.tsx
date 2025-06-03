@@ -20,7 +20,6 @@ const EmployeeAbsenceDetails = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // Fetch employees list
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -39,7 +38,6 @@ const EmployeeAbsenceDetails = () => {
     fetchEmployees();
   }, []);
 
-  // Fetch user's absences when selected
   useEffect(() => {
     const fetchUserAbsences = async () => {
       if (!selectedUserId) return;
@@ -48,12 +46,10 @@ const EmployeeAbsenceDetails = () => {
       setError(null);
 
       try {
-        // Get selected month dates
         const [year, month] = selectedMonth.split('-').map(Number);
         const firstDay = new Date(year, month - 1, 1);
         const lastDay = new Date(year, month, 0);
 
-        // Fetch leaves and permissions for the selected user
         const [leavesResponse, permissionsResponse] = await Promise.all([
           fetch(`${API_URL}/leaves?user=/api/users/${selectedUserId}`),
           fetch(`${API_URL}/permissions?user=/api/users/${selectedUserId}`)
@@ -62,13 +58,11 @@ const EmployeeAbsenceDetails = () => {
         const leavesData = await leavesResponse.json();
         const permissionsData = await permissionsResponse.json();
 
-        // Filter leaves for selected month
         const selectedMonthLeaves = (leavesData.member || []).filter((leave: Leave) => {
           const leaveDate = new Date(leave.startDate);
           return leaveDate >= firstDay && leaveDate <= lastDay;
         });
 
-        // Filter permissions for selected month
         const selectedMonthPermissions = (permissionsData.member || []).filter((permission: Permission) => {
           const permissionDate = new Date(permission.date);
           return permissionDate >= firstDay && permissionDate <= lastDay;
@@ -87,7 +81,6 @@ const EmployeeAbsenceDetails = () => {
     fetchUserAbsences();
   }, [selectedUserId, selectedMonth]);
 
-  // Apply status filter
   useEffect(() => {
     if (statusFilter === 'approved') {
       setDisplayedLeaves(allLeaves.filter(leave => leave.status === 'Approuvé'));
@@ -110,7 +103,6 @@ const EmployeeAbsenceDetails = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Section with enhanced styling */}
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -132,11 +124,9 @@ const EmployeeAbsenceDetails = () => {
           </div>
         </div>
 
-        {/* Filters Section with enhanced styling */}
         <div className="mb-6 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Employee Selector */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   Sélectionner un employé
@@ -160,7 +150,6 @@ const EmployeeAbsenceDetails = () => {
                 </div>
               </div>
 
-              {/* Status Filter */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   Filtrer par statut
@@ -183,7 +172,6 @@ const EmployeeAbsenceDetails = () => {
           </div>
         </div>
 
-        {/* Error Display with enhanced styling */}
         {error && (
           <div className="mb-6 rounded-xl bg-red-50 border-l-4 border-red-400 p-4 animate-fade-in">
             <div className="flex">
@@ -199,14 +187,12 @@ const EmployeeAbsenceDetails = () => {
           </div>
         )}
 
-        {/* Loading State with enhanced styling */}
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent shadow-lg"></div>
           </div>
         ) : selectedUserId ? (
           <div className="space-y-6">
-            {/* Leaves Section with enhanced styling */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transform transition-all duration-200 hover:shadow-xl">
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -271,7 +257,6 @@ const EmployeeAbsenceDetails = () => {
               </div>
             </div>
 
-            {/* Permissions Section with enhanced styling */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transform transition-all duration-200 hover:shadow-xl">
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-purple-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">

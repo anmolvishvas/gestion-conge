@@ -8,7 +8,6 @@ const AddEmployee = () => {
   const navigate = useNavigate();
   const { addUser } = useAdminContext();
   
-  // State for form inputs
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,27 +26,23 @@ const AddEmployee = () => {
     e.preventDefault();
     setError('');
     
-    // Basic validation
     if (!firstName || !lastName || !email || !phone || !trigram || !password || !startDate) {
       setError('Veuillez remplir tous les champs obligatoires.');
       return;
     }
     
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Format d\'email invalide.');
       return;
     }
     
-    // Validate trigram (3 uppercase letters)
     const trigramRegex = /^[A-Z]{3}$/;
     if (!trigramRegex.test(trigram)) {
       setError('Le trigramme doit contenir exactement 3 lettres majuscules.');
       return;
     }
     
-    // Create new user
     const newUser: Omit<UserType, 'id'> = {
       firstName,
       lastName,

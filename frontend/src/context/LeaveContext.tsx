@@ -74,7 +74,6 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
         ? await leaveService.getAll()
         : await leaveService.getUserLeaves(currentUser.id);
       
-      // Les données sont déjà formatées par le service
       setLeaves(fetchedLeaves);
     } catch (err) {
       console.error('Error refreshing leaves:', err);
@@ -112,7 +111,6 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     }
   };
   
-  // Filter leaves based on user and active filter
   const filteredLeaves = leaves.filter(leave => {
     if (!currentUser) return false;
 
@@ -137,16 +135,13 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     return true;
   });
   
-  // Filter permissions based on user and active filter
   const filteredPermissions = permissions.filter(permission => {
     if (!currentUser) return false;
 
-    // Pour la page PendingApprovals (admin), on ne montre que les permissions en attente
     if (window.location.pathname === '/admin/pending-approvals') {
       return permission.status === 'En attente';
     }
 
-    // Pour les autres pages, on applique le filtre normal
     if (activePermissionFilter === 'all') return true;
     if (activePermissionFilter === 'pending') return permission.status === 'En attente';
     if (activePermissionFilter === 'approved') return permission.status === 'Approuvé';

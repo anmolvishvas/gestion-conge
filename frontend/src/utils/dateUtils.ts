@@ -2,7 +2,7 @@ import { Holiday } from '../types/Holiday';
 
 export const isWeekend = (date: Date): boolean => {
     const day = date.getDay();
-    return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+    return day === 0 || day === 6;
 };
 
 export const isHoliday = (date: Date, holidays: Holiday[]): boolean => {
@@ -26,7 +26,6 @@ export const calculateWorkingDays = (
         const dateString = currentDate.toISOString().split('T')[0];
         
         if (!isWeekend(currentDate) && !isHoliday(currentDate, holidays)) {
-            // Check if it's a half day
             if (halfDayOptions[dateString]) {
                 days += 0.5;
             } else {

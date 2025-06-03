@@ -122,15 +122,11 @@ class LeaveBalanceSubscriber implements EventSubscriberInterface
                         $currentRemaining = $currentYearBalance['remaining_paid_leave'];
                         $initialPaidLeave = $currentYearBalance['initial_paid_leave'];
                         
-                        // Remove old carry over and add new one
-                        $newRemaining = ($currentRemaining - $oldCarryOver) + $newCarryOver;
-
                         // Update both current and previous year balances
                         $updateCurrentYearQuery = "
                             UPDATE leave_balance 
                             SET 
-                                carried_over_from_previous_year = :carryOver,
-                                remaining_paid_leave = :remaining
+                                carried_over_from_previous_year = :carryOver
                             WHERE id = :id
                         ";
 
@@ -148,7 +144,6 @@ class LeaveBalanceSubscriber implements EventSubscriberInterface
                                 $updateCurrentYearQuery,
                                 [
                                     'carryOver' => $newCarryOver,
-                                    'remaining' => $newRemaining,
                                     'id' => $currentYearBalance['id']
                                 ]
                             );
@@ -167,8 +162,7 @@ class LeaveBalanceSubscriber implements EventSubscriberInterface
                             $this->logger->debug('Updated both years:', [
                                 'currentYear' => [
                                     'id' => $currentYearBalance['id'],
-                                    'newCarryOver' => $newCarryOver,
-                                    'newRemaining' => $newRemaining
+                                    'newCarryOver' => $newCarryOver
                                 ],
                                 'previousYear' => [
                                     'id' => $previousYearBalance['id'],

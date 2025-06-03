@@ -2,14 +2,11 @@ import api, { API_URL } from './api';
 import { Leave, Permission, Holiday, HolidayCollection } from '../types';
 
 const formatLeaveForApi = (leave: Partial<Leave>) => {
-    // Convertir les dates au format Y-m-d
     const startDate = leave.startDate ? leave.startDate.split('T')[0] : undefined;
     const endDate = leave.endDate ? leave.endDate.split('T')[0] : undefined;
 
-    // Construire l'IRI pour l'utilisateur
     const userIri = leave.userId ? `${API_URL}/users/${leave.userId}` : leave.user?.id ? `${API_URL}/users/${leave.user.id}` : undefined;
 
-    // Ne garder que les champs nécessaires et non-undefined
     return {
         '@context': '/api/contexts/Leave',
         '@type': 'Leave',
@@ -27,13 +24,10 @@ const formatLeaveForApi = (leave: Partial<Leave>) => {
 const formatLeaveFromApi = (leave: any): Leave => {
     return {
         ...leave,
-        // Convertir les dates au format YYYY-MM-DD
         startDate: leave.startDate ? new Date(leave.startDate).toISOString().split('T')[0] : '',
         endDate: leave.endDate ? new Date(leave.endDate).toISOString().split('T')[0] : '',
         totalDays: leave.totalDays?.toString(),
-        // S'assurer que halfDayOptions est un tableau
         halfDayOptions: Array.isArray(leave.halfDayOptions) ? leave.halfDayOptions : [],
-        // Extraire l'ID de l'utilisateur depuis l'IRI si nécessaire
         userId: typeof leave.user === 'string' ? parseInt(leave.user.split('/').pop()) : leave.user?.id
     };
 };
@@ -93,21 +87,15 @@ export const leaveService = {
             responseType: 'blob'
         });
             
-            console.log('Response headers:', response.headers);
         
-        // Get the filename from Content-Disposition header
         const contentDisposition = response.headers['content-disposition'];
-            console.log('Content-Disposition header:', contentDisposition);
-            
             let filename = '';
             
             if (contentDisposition) {
-                // Essayer d'abord avec filename*=UTF-8
                 const filenameUtf8Match = /filename\*=UTF-8''([^;]*)/i.exec(contentDisposition);
                 if (filenameUtf8Match && filenameUtf8Match[1]) {
                     filename = decodeURIComponent(filenameUtf8Match[1]);
                 } else {
-                    // Sinon essayer avec filename standard
                     const matches = /filename="?([^"]*)"?/i.exec(contentDisposition);
                     if (matches && matches[1]) {
                         filename = matches[1];
@@ -115,22 +103,16 @@ export const leaveService = {
                 }
             }
             
-            console.log('Extracted filename:', filename);
-            
             if (!filename) {
                 console.warn('No filename found in Content-Disposition header, using default');
                 const leave = await api.get(`${API_URL}/leaves/${id}`);
                 filename = leave.data.certificate || `certificat-${id}`;
         }
         
-        // Get the correct MIME type from response
         const contentType = response.headers['content-type'] || 'application/octet-stream';
-            console.log('Content-Type:', contentType);
         
-        // Create a blob with the correct type
         const blob = new Blob([response.data], { type: contentType });
         
-        // Create a link element and trigger download
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

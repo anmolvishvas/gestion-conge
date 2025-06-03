@@ -26,13 +26,11 @@ const HolidayCalendar = () => {
     showMonthPicker: false
   });
 
-  // Filtrer les congés de l'utilisateur courant
   const userLeaves = leaves.filter(leave => 
     leave.userId === currentUser?.id && 
-    leave.status !== 'Rejeté'  // Exclure les congés rejetés
+    leave.status !== 'Rejeté'
   );
 
-  // Vérifier si une date donnée a un congé
   const getLeaveForDate = (date: Date) => {
     return userLeaves.find(leave => {
       const startDate = new Date(leave.startDate);
@@ -42,7 +40,6 @@ const HolidayCalendar = () => {
     });
   };
 
-  // Fetch holidays
   useEffect(() => {
     const fetchHolidays = async () => {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -65,7 +62,6 @@ const HolidayCalendar = () => {
     fetchHolidays();
   }, []);
 
-  // Calendar helpers
   const getDaysInMonth = (date: Date) => {
     const start = startOfMonth(date);
     const end = endOfMonth(date);

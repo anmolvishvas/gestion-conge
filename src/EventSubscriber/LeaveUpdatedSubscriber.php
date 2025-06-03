@@ -39,7 +39,6 @@ class LeaveUpdatedSubscriber
             return;
         }
 
-        // Get the changes from UnitOfWork
         $uow = $args->getObjectManager()->getUnitOfWork();
         $uow->computeChangeSets();
         $changeSet = $uow->getEntityChangeSet($entity);
@@ -54,7 +53,6 @@ class LeaveUpdatedSubscriber
             'changes' => $changeSet
         ]);
 
-        // Send notification emails
         $this->sendEmployeeNotificationEmail($entity, $changeSet);
         $this->sendDirectorNotificationEmail($entity, $changeSet);
     }
@@ -132,7 +130,6 @@ class LeaveUpdatedSubscriber
             default => '<p>Votre demande de congé a été mise à jour.</p>'
         };
 
-        // Prepare changes message
         $changesMessage = '';
         if (isset($changes['startDate']) || isset($changes['endDate']) || isset($changes['totalDays'])) {
             $changesMessage = '<div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">';
@@ -200,7 +197,6 @@ class LeaveUpdatedSubscriber
             default => '<p>La demande de congé a été mise à jour.</p>'
         };
 
-        // Prepare changes message
         $changesMessage = '';
         if (isset($changes['startDate']) || isset($changes['endDate']) || isset($changes['totalDays'])) {
             $changesMessage = '<div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">';

@@ -39,12 +39,10 @@ class PermissionUpdatedSubscriber
             return;
         }
 
-        // Get the changes from UnitOfWork
         $uow = $args->getObjectManager()->getUnitOfWork();
         $uow->computeChangeSets();
         $changeSet = $uow->getEntityChangeSet($entity);
 
-        // Récupérer la date de la permission
         $permissionDate = $entity->getDate();
 
         // Fix DateTime objects in the changeset
@@ -53,7 +51,6 @@ class PermissionUpdatedSubscriber
             $newStartTime = $changeSet['startTime'][1];
 
             if ($oldStartTime instanceof \DateTime) {
-                // Copier la date de la permission pour l'ancien temps
                 $oldStartTime->setDate(
                     (int)$permissionDate->format('Y'),
                     (int)$permissionDate->format('m'),
@@ -62,7 +59,6 @@ class PermissionUpdatedSubscriber
             }
 
             if ($newStartTime instanceof \DateTime) {
-                // Copier la date de la permission pour le nouveau temps
                 $newStartTime->setDate(
                     (int)$permissionDate->format('Y'),
                     (int)$permissionDate->format('m'),
@@ -76,7 +72,6 @@ class PermissionUpdatedSubscriber
             $newEndTime = $changeSet['endTime'][1];
 
             if ($oldEndTime instanceof \DateTime) {
-                // Copier la date de la permission pour l'ancien temps
                 $oldEndTime->setDate(
                     (int)$permissionDate->format('Y'),
                     (int)$permissionDate->format('m'),
@@ -85,7 +80,6 @@ class PermissionUpdatedSubscriber
             }
 
             if ($newEndTime instanceof \DateTime) {
-                // Copier la date de la permission pour le nouveau temps
                 $newEndTime->setDate(
                     (int)$permissionDate->format('Y'),
                     (int)$permissionDate->format('m'),
@@ -105,7 +99,6 @@ class PermissionUpdatedSubscriber
             'changes' => $changeSet
         ]);
 
-        // Send notification emails
         $this->sendEmployeeNotificationEmail($entity, $changeSet);
         $this->sendDirectorNotificationEmail($entity, $changeSet);
     }
@@ -170,7 +163,6 @@ class PermissionUpdatedSubscriber
 
     private function getEmployeeNotificationTemplate(Permission $permission, array $changes): string
     {
-        // Combine date with time for start and end
         $permissionDate = $permission->getDate();
         $startDateTime = clone $permissionDate;
         $endDateTime = clone $permissionDate;
@@ -196,7 +188,6 @@ class PermissionUpdatedSubscriber
             default => '<p>Votre demande de permission a été mise à jour.</p>'
         };
 
-        // Prepare changes message
         $changesMessage = '';
         if (isset($changes['startTime']) || isset($changes['endTime']) || isset($changes['reason'])) {
             $changesMessage = '<div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">';
@@ -223,13 +214,11 @@ class PermissionUpdatedSubscriber
             $changesMessage .= '</div>';
         }
 
-        // Prepare replacement details
         $replacementDetails = '';
         if ($permission->getReplacementSlots() && !$permission->getReplacementSlots()->isEmpty()) {
             $replacementDetails = '<div style="background-color: #e0f2fe; padding: 15px; border-radius: 5px; margin: 20px 0;">';
             $replacementDetails .= '<h3 style="margin-top: 0; color: #0369a1;">Détails des remplacements :</h3>';
 
-            // Trier les créneaux par date et heure
             $slots = $permission->getReplacementSlots()->toArray();
             usort($slots, function ($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
@@ -240,7 +229,6 @@ class PermissionUpdatedSubscriber
             });
 
             foreach ($slots as $slot) {
-                // Combine date with time
                 $date = $slot->getDate();
                 $startDateTime = clone $date;
                 $endDateTime = clone $date;
@@ -266,16 +254,13 @@ class PermissionUpdatedSubscriber
             $replacementDetails .= '</div>';
         }
 
-        // Check for changes in replacement slots
         if (isset($changes['replacementSlots'])) {
             $replacementChanges = '<div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">';
             $replacementChanges .= '<h3 style="margin-top: 0; color: #92400e;">Modifications des remplacements :</h3>';
 
-            // Compare old and new replacement slots
             $oldSlots = $changes['replacementSlots'][0];
             $newSlots = $changes['replacementSlots'][1];
 
-            // Trier les anciens créneaux
             usort($oldSlots, function ($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
                 if ($dateCompare === 0) {
@@ -284,7 +269,6 @@ class PermissionUpdatedSubscriber
                 return $dateCompare;
             });
 
-            // Show removed slots
             foreach ($oldSlots as $oldSlot) {
                 if (!$this->slotExistsInCollection($oldSlot, $newSlots)) {
                     // Combine date with time
@@ -312,7 +296,6 @@ class PermissionUpdatedSubscriber
                 }
             }
 
-            // Trier les nouveaux créneaux
             usort($newSlots, function ($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
                 if ($dateCompare === 0) {
@@ -321,10 +304,8 @@ class PermissionUpdatedSubscriber
                 return $dateCompare;
             });
 
-            // Show added slots
             foreach ($newSlots as $newSlot) {
                 if (!$this->slotExistsInCollection($newSlot, $oldSlots)) {
-                    // Combine date with time
                     $date = $newSlot->getDate();
                     $startDateTime = clone $date;
                     $endDateTime = clone $date;
@@ -382,7 +363,6 @@ class PermissionUpdatedSubscriber
 
     private function getDirectorNotificationTemplate(Permission $permission, array $changes): string
     {
-        // Combine date with time for start and end
         $permissionDate = $permission->getDate();
         $startDateTime = clone $permissionDate;
         $endDateTime = clone $permissionDate;
@@ -408,7 +388,6 @@ class PermissionUpdatedSubscriber
             default => '<p>La demande de permission a été mise à jour.</p>'
         };
 
-        // Prepare changes message
         $changesMessage = '';
         if (isset($changes['startTime']) || isset($changes['endTime']) || isset($changes['reason'])) {
             $changesMessage = '<div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">';
@@ -435,13 +414,11 @@ class PermissionUpdatedSubscriber
             $changesMessage .= '</div>';
         }
 
-        // Prepare replacement details
         $replacementDetails = '';
         if ($permission->getReplacementSlots() && !$permission->getReplacementSlots()->isEmpty()) {
             $replacementDetails = '<div style="background-color: #e0f2fe; padding: 15px; border-radius: 5px; margin: 20px 0;">';
             $replacementDetails .= '<h3 style="margin-top: 0; color: #0369a1;">Détails des remplacements :</h3>';
 
-            // Trier les créneaux par date et heure
             $slots = $permission->getReplacementSlots()->toArray();
             usort($slots, function ($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
@@ -452,7 +429,6 @@ class PermissionUpdatedSubscriber
             });
 
             foreach ($slots as $slot) {
-                // Combine date with time
                 $date = $slot->getDate();
                 $startDateTime = clone $date;
                 $endDateTime = clone $date;
@@ -478,16 +454,13 @@ class PermissionUpdatedSubscriber
             $replacementDetails .= '</div>';
         }
 
-        // Check for changes in replacement slots
         if (isset($changes['replacementSlots'])) {
             $replacementChanges = '<div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">';
             $replacementChanges .= '<h3 style="margin-top: 0; color: #92400e;">Modifications des remplacements :</h3>';
 
-            // Compare old and new replacement slots
             $oldSlots = $changes['replacementSlots'][0];
             $newSlots = $changes['replacementSlots'][1];
 
-            // Trier les anciens créneaux
             usort($oldSlots, function ($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
                 if ($dateCompare === 0) {
@@ -496,10 +469,8 @@ class PermissionUpdatedSubscriber
                 return $dateCompare;
             });
 
-            // Show removed slots
             foreach ($oldSlots as $oldSlot) {
                 if (!$this->slotExistsInCollection($oldSlot, $newSlots)) {
-                    // Combine date with time
                     $date = $oldSlot->getDate();
                     $startDateTime = clone $date;
                     $endDateTime = clone $date;
@@ -524,7 +495,6 @@ class PermissionUpdatedSubscriber
                 }
             }
 
-            // Trier les nouveaux créneaux
             usort($newSlots, function ($a, $b) {
                 $dateCompare = $a->getDate()->format('Y-m-d') <=> $b->getDate()->format('Y-m-d');
                 if ($dateCompare === 0) {
@@ -533,10 +503,8 @@ class PermissionUpdatedSubscriber
                 return $dateCompare;
             });
 
-            // Show added slots
             foreach ($newSlots as $newSlot) {
                 if (!$this->slotExistsInCollection($newSlot, $oldSlots)) {
-                    // Combine date with time
                     $date = $newSlot->getDate();
                     $startDateTime = clone $date;
                     $endDateTime = clone $date;
