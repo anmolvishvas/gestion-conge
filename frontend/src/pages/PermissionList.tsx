@@ -1,16 +1,22 @@
 import  React, { useState } from 'react';
 import { Clock, Edit, Trash, Filter, AlertCircle } from 'lucide-react';
 import { useLeaveContext } from '../context/LeaveContext';
+import { useUserContext } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, formatTime } from '../utils/formatters';
 import { PermissionFilterType } from '../types';
 
 const PermissionList = () => {
   const { filteredPermissions, activePermissionFilter, setPermissionFilter, deletePermission } = useLeaveContext();
+  const { currentUser } = useUserContext();
   const navigate = useNavigate();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [permissionToDelete, setPermissionToDelete] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  const userPermissions = filteredPermissions.filter(permission => 
+    permission.userId === currentUser?.id
+  );
   
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPermissionFilter(e.target.value as PermissionFilterType);
@@ -99,12 +105,12 @@ const PermissionList = () => {
           </div>
         </div>
         
-        {filteredPermissions.length === 0 ? (
+        {userPermissions.length === 0 ? (
           <div className="text-center py-12">
             <Clock size={48} className="mx-auto text-gray-300" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune permission trouvée</h3>
             <p className="mt-1 text-sm text-gray-500">
-              Aucune demande de permission ne correspond à votre filtre actuel.
+              Vous n'avez pas encore de demande de permission correspondant à ce filtre.
             </p>
             <div className="mt-6">
               <button
@@ -141,7 +147,7 @@ const PermissionList = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPermissions.map((permission) => (
+                {userPermissions.map((permission) => (
                   <React.Fragment key={permission.id}>
                     <tr className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">

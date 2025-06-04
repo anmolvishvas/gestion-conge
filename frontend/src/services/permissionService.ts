@@ -105,13 +105,11 @@ class PermissionService {
     const currentPermission = await this.getById(id);
     
     const mergedData = {
+      ...currentPermission,
       ...permissionData,
       id: id,
       userId: currentPermission.userId,
-      replacementSlots: permissionData.replacementSlots?.map(slot => ({
-        ...slot,
-        permission: id
-      }))
+      replacementSlots: permissionData.replacementSlots || currentPermission.replacementSlots
     };
     
     const formattedPermission = formatPermissionForApi(mergedData);
@@ -124,11 +122,19 @@ class PermissionService {
   }
 
   async approvePermission(id: number): Promise<Permission> {
-    return this.update(id, { status: 'Approuvé' });
+    const currentPermission = await this.getById(id);
+    return this.update(id, { 
+      ...currentPermission,
+      status: 'Approuvé'
+    });
   }
 
   async rejectPermission(id: number): Promise<Permission> {
-    return this.update(id, { status: 'Rejeté' });
+    const currentPermission = await this.getById(id);
+    return this.update(id, { 
+      ...currentPermission,
+      status: 'Rejeté'
+    });
   }
 }
 

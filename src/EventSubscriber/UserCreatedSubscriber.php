@@ -38,9 +38,9 @@ class UserCreatedSubscriber implements EventSubscriberInterface
     public function postPersist(LifecycleEventArgs $args): void
     {
         $this->logger->info('PostPersist event triggered');
-        
+
         $entity = $args->getObject();
-        
+
         $this->logger->info('Entity type received', [
             'class' => get_class($entity)
         ]);
@@ -57,11 +57,9 @@ class UserCreatedSubscriber implements EventSubscriberInterface
             'lastName' => $entity->getLastName()
         ]);
 
-        $this->sendWelcomeEmail($entity);
-
         $startDate = $entity->getStartDate();
         $currentYear = (int)date('Y');
-        
+
         if (!$startDate) {
             $this->logger->warning('User has no start date, using current year with full balance');
             $this->leaveBalanceManager->initializeYearlyBalanceWithProrata(
@@ -69,32 +67,35 @@ class UserCreatedSubscriber implements EventSubscriberInterface
                 $currentYear,
                 12
             );
-            return;
-        }
+        } else {
+            $startYear = (int)$startDate->format('Y');
+            $startMonth = (int)$startDate->format('n');
 
-        $startYear = (int)$startDate->format('Y');
-        $startMonth = (int)$startDate->format('n');
+            for ($year = $startYear; $year <= $currentYear; $year++) {
+                $monthsWorked = 12;
 
-        for ($year = $startYear; $year <= $currentYear; $year++) {
-            $monthsWorked = 12;
+                if ($year === $startYear) {
+                    $monthsWorked = 13 - $startMonth;
+                }
 
-            if ($year === $startYear) {
-                $monthsWorked = 13 - $startMonth;
+                $this->logger->info('Initializing leave balance', [
+                    'user' => $entity->getEmail(),
+                    'year' => $year,
+                    'monthsWorked' => $monthsWorked,
+                    'startDate' => $startDate->format('Y-m-d')
+                ]);
+
+                $this->leaveBalanceManager->initializeYearlyBalanceWithProrata(
+                    $entity,
+                    $year,
+                    $monthsWorked
+                );
             }
-
-            $this->logger->info('Initializing leave balance', [
-                'user' => $entity->getEmail(),
-                'year' => $year,
-                'monthsWorked' => $monthsWorked,
-                'startDate' => $startDate->format('Y-m-d')
-            ]);
-
-            $this->leaveBalanceManager->initializeYearlyBalanceWithProrata(
-                $entity,
-                $year,
-                $monthsWorked
-            );
         }
+
+        $args->getObjectManager()->flush();
+
+        $this->sendWelcomeEmail($entity);
     }
 
     private function sendWelcomeEmail(User $user): void
@@ -110,7 +111,7 @@ class UserCreatedSubscriber implements EventSubscriberInterface
 
             $this->emailService->sendEmail(
                 'no-reply@sydev.com',
-                $user->getEmail(), 
+                $user->getEmail(),
                 null,
                 $subject,
                 $body
@@ -163,4 +164,4 @@ class UserCreatedSubscriber implements EventSubscriberInterface
         </div>
         HTML;
     }
-} 
+}

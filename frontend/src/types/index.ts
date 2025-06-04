@@ -10,6 +10,17 @@ export interface HalfDayOption {
     type: HalfDayType;
 }
 
+export interface LeaveBalance {
+    id: number;
+    year: number;
+    initialPaidLeave: number;
+    initialSickLeave: number;
+    remainingPaidLeave: number;
+    remainingSickLeave: number;
+    carriedOverFromPreviousYear: number;
+    carriedOverToNextYear: number;
+}
+
 export interface User {
     id: number;
     firstName: string;
@@ -24,6 +35,7 @@ export interface User {
     sickLeaveBalance: number;
     startDate: string;
     endDate: string | null;
+    leaveBalances: LeaveBalance[];
 }
 
 export interface ReplacementSlot {

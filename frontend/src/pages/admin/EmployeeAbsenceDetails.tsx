@@ -1,9 +1,320 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Download, Search, Filter, ChevronDown } from 'lucide-react';
-import { User, Leave, Permission } from '../../types';
+import { Calendar, Clock, Download, Search, Filter, ChevronDown, X } from 'lucide-react';
+import { User, Leave, Permission, HalfDayOption } from '../../types';
 import { leaveService } from '../../services/leaveService';
 import { formatDate, formatTime } from '../../utils/formatters';
 import { API_URL } from '../../services/api';
+
+interface LeaveModalProps {
+  leave: Leave;
+  onClose: () => void;
+  onDownload?: (leaveId: number) => void;
+}
+
+interface PermissionModalProps {
+  permission: Permission;
+  onClose: () => void;
+}
+
+const StatusBadge = ({ status }: { status: string }) => (
+  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+    ${status === 'Approuvé' ? 'bg-green-100 text-green-800' : 
+      status === 'Rejeté' ? 'bg-red-100 text-red-800' : 
+      'bg-gray-100 text-gray-800'}`}>
+    {status}
+  </span>
+);
+
+const DetailSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+    <h3 className="text-sm font-medium text-gray-700">{title}</h3>
+    <div className="space-y-2">
+      {children}
+    </div>
+  </div>
+);
+
+const ModalHeader = ({ title, subtitle, onClose }: { title: string; subtitle?: string; onClose: () => void }) => (
+  <div className="px-6 py-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+    <div className="flex justify-between items-start">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+      </div>
+      <button
+        onClick={onClose}
+        className="text-gray-400 hover:text-gray-500 transition-colors p-1 hover:bg-gray-100 rounded-full"
+      >
+        <X size={20} />
+      </button>
+    </div>
+  </div>
+);
+
+const LeaveModal = ({ leave, onClose, onDownload }: LeaveModalProps) => {
+  const getHalfDayText = (option: HalfDayOption) => {
+    switch (option.type) {
+      case 'AM': return 'Matin';
+      case 'PM': return 'Après-midi';
+      case 'FULL': return 'Journée complète';
+      default: return '';
+    }
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (leave.id && onDownload) {
+      onDownload(leave.id);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl h-[90vh] flex flex-col">
+        <ModalHeader
+          title="Détails du congé"
+          subtitle={`Demande créée le ${formatDate(leave.createdAt || '')}`}
+          onClose={onClose}
+        />
+        
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {leave.user?.firstName} {leave.user?.lastName}
+                </h3>
+                <p className="text-sm text-gray-500">{leave.user?.trigram}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                ${leave.type === 'Congé payé' ? 'bg-green-100 text-green-800' : 
+                  leave.type === 'Congé sans solde' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'}`}>
+                {leave.type}
+              </span>
+              <StatusBadge status={leave.status} />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-white rounded-lg shadow-sm">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Période du congé</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Du :</span>
+                    <span className="ml-2">{formatDate(leave.startDate)}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Au :</span>
+                    <span className="ml-2">{formatDate(leave.endDate)}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Durée totale :</span>
+                    <span className="ml-2">{leave.totalDays} jour(s)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {leave.halfDayOptions && leave.halfDayOptions.length > 0 && (
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Clock className="h-5 w-5 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Options demi-journées</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {leave.halfDayOptions.map((option, index) => (
+                  <div key={index} 
+                    className="bg-white rounded-lg p-3 shadow-sm border border-purple-100 hover:shadow-md transition-shadow">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-900 mb-1">
+                        {formatDate(option.date)}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${
+                          option.type === 'AM' ? 'bg-orange-400' :
+                          option.type === 'PM' ? 'bg-indigo-400' :
+                          'bg-green-400'
+                        }`} />
+                        <span className="text-sm text-purple-600">
+                          {getHalfDayText(option)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {leave.reason && (
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Motif du congé</h3>
+              <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{leave.reason}</p>
+            </div>
+          )}
+
+          {leave.certificate && (
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <Download className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Certificat médical</h3>
+                    <p className="text-sm text-gray-600 mt-1">Un certificat médical a été fourni pour ce congé</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center px-4 py-2 text-sm font-medium text-amber-700 hover:text-amber-800 hover:bg-amber-100 rounded-lg transition-all duration-200"
+                >
+                  <Download size={16} className="mr-2" />
+                  Télécharger
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PermissionModal = ({ permission, onClose }: PermissionModalProps) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl h-[90vh] flex flex-col">
+        <ModalHeader
+          title="Détails de la permission"
+          subtitle={`Permission pour le ${formatDate(permission.date)}`}
+          onClose={onClose}
+        />
+        
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {permission.user?.firstName} {permission.user?.lastName}
+                </h3>
+                <p className="text-sm text-gray-500">{permission.user?.trigram}</p>
+              </div>
+            </div>
+            <StatusBadge status={permission.status} />
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-white rounded-lg shadow-sm">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Horaires de la permission</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Date :</span>
+                    <span className="ml-2">{formatDate(permission.date)}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Période :</span>
+                    <span className="ml-2">{formatTime(permission.startTime)} - {formatTime(permission.endTime)}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Durée :</span>
+                    <span className="ml-2">
+                      {permission.durationMinutes >= 60 ? (
+                        <>
+                          {Math.floor(permission.durationMinutes / 60)}h
+                          {permission.durationMinutes % 60 > 0 && `${permission.durationMinutes % 60}min`}
+                        </>
+                      ) : (
+                        `${permission.durationMinutes}min`
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Motif de la permission</h3>
+            <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{permission.reason}</p>
+          </div>
+
+          {permission.replacementSlots && permission.replacementSlots.length > 0 && (
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <Clock className="h-5 w-5 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Détails des remplacements</h3>
+              </div>
+              
+              <div className="space-y-4">
+                {permission.replacementSlots.map((slot, index) => (
+                  <div key={index} 
+                    className="bg-white rounded-lg p-4 shadow-sm border border-emerald-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">{formatDate(slot.date)}</span>
+                          <span className="h-1 w-1 bg-gray-300 rounded-full"></span>
+                          <span className="text-sm text-gray-600">
+                            {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Durée : {slot.durationMinutes >= 60 ? (
+                            <>
+                              {Math.floor(slot.durationMinutes / 60)}h
+                              {slot.durationMinutes % 60 > 0 && `${slot.durationMinutes % 60}min`}
+                            </>
+                          ) : (
+                            `${slot.durationMinutes}min`
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="mt-4 pt-4 border-t border-emerald-200">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-700">Durée totale des remplacements :</span>
+                    <span className="text-emerald-600 font-semibold">
+                      {permission.replacementSlots.reduce((total, slot) => total + slot.durationMinutes, 0) >= 60 ? (
+                        <>
+                          {Math.floor(permission.replacementSlots.reduce((total, slot) => total + slot.durationMinutes, 0) / 60)}h
+                          {permission.replacementSlots.reduce((total, slot) => total + slot.durationMinutes, 0) % 60 > 0 && 
+                            `${permission.replacementSlots.reduce((total, slot) => total + slot.durationMinutes, 0) % 60}min`}
+                        </>
+                      ) : (
+                        `${permission.replacementSlots.reduce((total, slot) => total + slot.durationMinutes, 0)}min`
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const EmployeeAbsenceDetails = () => {
   const [employees, setEmployees] = useState<User[]>([]);
@@ -19,6 +330,8 @@ const EmployeeAbsenceDetails = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null);
+  const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -93,6 +406,7 @@ const EmployeeAbsenceDetails = () => {
 
   const handleDownloadCertificate = async (leaveId: number) => {
     try {
+      setError(null);
       await leaveService.downloadCertificate(leaveId);
     } catch (err) {
       setError('Erreur lors du téléchargement du certificat');
@@ -211,7 +525,8 @@ const EmployeeAbsenceDetails = () => {
                   <div className="space-y-4">
                     {displayedLeaves.map((leave) => (
                       <div key={leave.id} 
-                           className="group relative bg-white rounded-xl border-2 border-gray-100 p-4 hover:border-blue-200 transition-all duration-200 hover:shadow-md">
+                           onClick={() => setSelectedLeave(leave)}
+                           className="group relative bg-white rounded-xl border-2 border-gray-100 p-4 hover:border-blue-200 transition-all duration-200 hover:shadow-md cursor-pointer">
                         <div className="flex justify-between items-start">
                           <div>
                             <div className="flex items-center mb-3 space-x-2">
@@ -242,7 +557,10 @@ const EmployeeAbsenceDetails = () => {
                           </div>
                           {leave.certificate && (
                             <button
-                              onClick={() => leave.id && handleDownloadCertificate(leave.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (leave.id) handleDownloadCertificate(leave.id);
+                              }}
                               className="flex items-center px-4 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-200 group-hover:bg-blue-50"
                             >
                               <Download size={16} className="mr-2" />
@@ -275,7 +593,8 @@ const EmployeeAbsenceDetails = () => {
                   <div className="space-y-6">
                     {displayedPermissions.map((permission) => (
                       <div key={permission.id} 
-                           className="group relative bg-white rounded-xl border-2 border-gray-100 p-4 hover:border-purple-200 transition-all duration-200 hover:shadow-md">
+                           onClick={() => setSelectedPermission(permission)}
+                           className="group relative bg-white rounded-xl border-2 border-gray-100 p-4 hover:border-purple-200 transition-all duration-200 hover:shadow-md cursor-pointer">
                         <div>
                           <div className="flex items-center mb-3">
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200
@@ -324,6 +643,21 @@ const EmployeeAbsenceDetails = () => {
           </div>
         )}
       </div>
+      
+      {selectedLeave && (
+        <LeaveModal
+          leave={selectedLeave}
+          onClose={() => setSelectedLeave(null)}
+          onDownload={handleDownloadCertificate}
+        />
+      )}
+
+      {selectedPermission && (
+        <PermissionModal
+          permission={selectedPermission}
+          onClose={() => setSelectedPermission(null)}
+        />
+      )}
     </div>
   );
 };

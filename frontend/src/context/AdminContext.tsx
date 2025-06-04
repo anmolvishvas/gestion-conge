@@ -21,6 +21,29 @@ interface EmployeeLeaveSummary {
   };
 }
 
+interface ApiLeaveBalance {
+  '@id': string;
+  '@type': string;
+  id: number;
+  user: string;
+  year: number;
+  initialPaidLeave: number;
+  initialSickLeave: number;
+  remainingPaidLeave: number;
+  remainingSickLeave: number;
+  carriedOverFromPreviousYear: number;
+  carriedOverToNextYear: number;
+}
+
+interface ApiLeaveBalanceResponse {
+  '@context': string;
+  '@id': string;
+  '@type': string;
+  'totalItems': number;
+  'member': ApiLeaveBalance[];
+  'hydra:member': ApiLeaveBalance[];
+}
+
 interface AdminContextType {
   users: User[];
   stats: AdminStats;
@@ -153,10 +176,23 @@ export const AdminProvider = ({ children }: AdminProviderProps) => {
   
   const getEmployeeLeaveSummary = (year: number) => {
     if (!users || !isLoggedIn || !currentUser?.isAdmin) return [];
+    
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31);
+    
     return users
       .filter(user => user.status === 'active')
       .map(user => {
-        const userLeaves = leaves ? leaves.filter(leave => leave.userId === user.id) : [];
+        if (!user) return user;
+
+        const userLeaves = leaves 
+          ? leaves.filter(leave => {
+              const leaveStartDate = new Date(leave.startDate);
+              return leave.userId === user.id && 
+                     leaveStartDate >= startDate && 
+                     leaveStartDate <= endDate;
+            }) 
+          : [];
         
         const paidLeaveTaken = userLeaves
           .filter(leave => leave.type === 'Congé payé' && leave.status === 'Approuvé')
@@ -170,12 +206,20 @@ export const AdminProvider = ({ children }: AdminProviderProps) => {
           .filter(leave => leave.type === 'Congé sans solde' && leave.status === 'Approuvé')
           .reduce((total, leave) => total + (Number(leave.totalDays) || 0), 0);
         
-        const paidLeaveRemaining = Math.max(0, user.paidLeaveBalance - paidLeaveTaken);
-        const sickLeaveRemaining = Math.max(0, user.sickLeaveBalance - sickLeaveTaken);
+        const yearBalance = user.leaveBalances?.find(balance => balance.year === year);
+        
+        const paidLeaveBalance = yearBalance?.remainingPaidLeave ?? 0;
+        const carriedOverDays = yearBalance?.carriedOverFromPreviousYear ?? 0;
+        const totalPaidLeaveAvailable = paidLeaveBalance + carriedOverDays;
+        
+        const sickLeaveBalance = yearBalance?.remainingSickLeave ?? 0;
+        
+        const paidLeaveRemaining = Math.max(0, totalPaidLeaveAvailable - paidLeaveTaken);
+        const sickLeaveRemaining = Math.max(0, sickLeaveBalance - sickLeaveTaken);
         
         const totalTaken = paidLeaveTaken + sickLeaveTaken + unpaidLeaveTaken;
         const totalRemaining = paidLeaveRemaining + sickLeaveRemaining;
-        const totalLeaveBalance = user.paidLeaveBalance + user.sickLeaveBalance;
+        const totalLeaveBalance = totalPaidLeaveAvailable + sickLeaveBalance;
         
         return {
           id: user.id,
@@ -185,12 +229,12 @@ export const AdminProvider = ({ children }: AdminProviderProps) => {
             paid: {
               taken: paidLeaveTaken,
               remaining: paidLeaveRemaining,
-              total: user.paidLeaveBalance
+              total: totalPaidLeaveAvailable
             },
             sick: {
               taken: sickLeaveTaken,
               remaining: sickLeaveRemaining,
-              total: user.sickLeaveBalance
+              total: sickLeaveBalance
             },
             unpaid: {
               taken: unpaidLeaveTaken
@@ -246,23 +290,72 @@ export const AdminProvider = ({ children }: AdminProviderProps) => {
   const refreshLeaveSummary = async () => {
     try {
       setIsLoading(true);
+      
+      // Fetch users first
       const updatedUsers = await userService.getAll();
-      setUsers(updatedUsers);
+      if (!updatedUsers) {
+        console.error('No users data received');
+        return;
+      }
 
-      const response = await api.get(`${API_URL}/leave_balances`);
-      const leaveBalances = response.data['hydra:member'];
+      const response = await api.get<ApiLeaveBalanceResponse>(`${API_URL}/leave_balances`);
 
-      const activeUsers = updatedUsers.filter(user => user.status === 'active');
+      if (!response?.data) {
+        console.error('No response data');
+        setUsers(updatedUsers);
+        return;
+      }
+
+      const leaveBalances = response.data['hydra:member'] || response.data.member;
+      
+      if (!leaveBalances) {
+        console.error('No leave balances found in response:', response.data);
+        setUsers(updatedUsers);
+        return;
+      }
+
+      const usersWithBalances = updatedUsers.map(user => {
+        if (!user) return user;
+
+        const userBalances = leaveBalances.filter((balance: ApiLeaveBalance) => {
+          if (!balance?.user) return false;
+          const userId = balance.user.split('/').pop();
+          return userId === user.id.toString();
+        });
+
+        const formattedBalances = userBalances.map((balance: ApiLeaveBalance) => ({
+          id: balance.id,
+          year: balance.year,
+          initialPaidLeave: balance.initialPaidLeave,
+          initialSickLeave: balance.initialSickLeave,
+          remainingPaidLeave: balance.remainingPaidLeave,
+          remainingSickLeave: balance.remainingSickLeave,
+          carriedOverFromPreviousYear: balance.carriedOverFromPreviousYear,
+          carriedOverToNextYear: balance.carriedOverToNextYear
+        }));
+
+        return {
+          ...user,
+          leaveBalances: formattedBalances
+        };
+      });
+
+      setUsers(usersWithBalances);
+
+      const activeUsers = usersWithBalances.filter(user => user?.status === 'active');
       setStats({
-        totalEmployees: updatedUsers.length,
+        totalEmployees: usersWithBalances.length,
         activeEmployees: activeUsers.length,
         pendingLeaves: leaves ? leaves.filter(leave => leave.status === 'En attente').length : 0,
         todayAbsent: getAbsentEmployees().length
       });
 
-      setIsLoading(false);
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des données:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message, error.stack);
+      }
+    } finally {
       setIsLoading(false);
     }
   };
